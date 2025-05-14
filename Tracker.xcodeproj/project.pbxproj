@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3CFFFAD32DD53EA10012D511 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3CFFFAD22DD53EA10012D511 /* SnapKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		3CFFFA482DD51EDF0012D511 /* Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -14,7 +18,7 @@
 		3CFFFA5A2DD51EE10012D511 /* Exceptions for "Tracker" folder in "Tracker" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				SupportingFiles/Info.plist,
 			);
 			target = 3CFFFA472DD51EDF0012D511 /* Tracker */;
 		};
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3CFFFAD32DD53EA10012D511 /* SnapKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = Tracker;
 			packageProductDependencies = (
+				3CFFFAD22DD53EA10012D511 /* SnapKit */,
 			);
 			productName = Tracker;
 			productReference = 3CFFFA482DD51EDF0012D511 /* Tracker.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 3CFFFA3F2DD51EDF0012D511;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3CFFFAD12DD53EA10012D511 /* XCRemoteSwiftPackageReference "SnapKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3CFFFA492DD51EDF0012D511 /* Products */;
 			projectDirPath = "";
@@ -147,7 +156,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M5KG29P3ML;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Tracker/Info.plist;
+				INFOPLIST_FILE = Tracker/SupportingFiles/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -181,7 +190,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M5KG29P3ML;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Tracker/Info.plist;
+				INFOPLIST_FILE = Tracker/SupportingFiles/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tracker;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -347,6 +356,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3CFFFAD12DD53EA10012D511 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3CFFFAD22DD53EA10012D511 /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3CFFFAD12DD53EA10012D511 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3CFFFA402DD51EDF0012D511 /* Project object */;
 }
