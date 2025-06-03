@@ -11,7 +11,7 @@ final class HomeViewController: UIViewController {
         }
 
         let stubLabel = UILabel()
-        stubLabel.text = Constants.stubTitle
+        stubLabel.text = Constants.stubMessage
         stubLabel.textAlignment = .center
         stubLabel.font = .systemFont(ofSize: Constants.stubTitleFontSize)
         
@@ -20,15 +20,21 @@ final class HomeViewController: UIViewController {
         
         let stack = UIStackView(arrangedSubviews: [imageView, stubLabel])
         stack.axis = .vertical
-        stack.spacing = Constants.stubSpacing
+        stack.spacing = Constants.Layout.stubSpacing
         stack.alignment = .center
         
         imageView.snp.makeConstraints { make in
-            make.width.height.equalTo(Constants.stubImageSize)
+            make.width.height.equalTo(Constants.Layout.stubImageWidth)
         }
         
         return stack
     }()
+    
+    // MARK: - Private Properties
+
+    private var categories: [TrackerCategory] = []
+    private var completedTrackers: [TrackerRecord] = []
+    private var currentDate = Date()
     
     // MARK: - Lifecycle
 
@@ -43,7 +49,7 @@ final class HomeViewController: UIViewController {
     // MARK: - Private Methods
     
     private func setupNavigationItems() {
-        guard let leftNavIcon = UIImage(named: Constants.leftNavItemIcon)?
+        guard let leftNavIcon = UIImage(named: Constants.addButtonIcon)?
             .withRenderingMode(.alwaysTemplate)
             .withTintColor(.ypBlack) else {
             fatalError("[HomeViewController] – Не существует картинки для left nav item")
@@ -64,6 +70,10 @@ final class HomeViewController: UIViewController {
         
         let datePicker = UIDatePicker()
         datePicker.datePickerMode = .date
+        
+        datePicker.snp.makeConstraints { make in
+            make.width.equalTo(Constants.Layout.datePickerWidth)
+        }
         
         let rightNavItem = UIBarButtonItem(customView: datePicker)
         navigationItem.rightBarButtonItem = rightNavItem
@@ -89,11 +99,15 @@ final class HomeViewController: UIViewController {
 extension HomeViewController {
     private enum Constants {
         static let title = "Трекеры"
-        static let leftNavItemIcon = "PlusIcon"
+        static let addButtonIcon = "PlusIcon"
         static let stubImage = "HomeViewStubImage"
-        static let stubTitle = "Что будем отслеживать?"
-        static let stubSpacing: CGFloat = 8
+        static let stubMessage = "Что будем отслеживать?"
         static let stubTitleFontSize: CGFloat = 12
-        static let stubImageSize: CGFloat = 80
+        
+        enum Layout {
+            static let stubSpacing: CGFloat = 8
+            static let stubImageWidth: CGFloat = 80
+            static let datePickerWidth: CGFloat = 120
+        }
     }
 }
