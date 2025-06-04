@@ -97,6 +97,7 @@ final class CreateTrackerViewController: UIViewController {
     
     private func setupNavigationBar() {
         navigationItem.title = trackerType.createTitle
+        navigationItem.hidesBackButton = true
         
         if let navigationBar = navigationController?.navigationBar {
             let appearance = UINavigationBarAppearance()

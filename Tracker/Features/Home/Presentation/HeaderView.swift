@@ -23,6 +23,12 @@ final class HeaderView: UICollectionReusableView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Public Methods
+    
+    func configure(with title: String) {
+        titleLabel.text = title
+    }
+    
     // MARK: - Private Methods
     
     private func setupUI() {
@@ -33,10 +39,4 @@ final class HeaderView: UICollectionReusableView {
             make.centerY.equalToSuperview()
         }
     }
-    
-    // MARK: - Configuration
-    
-    func configure(with title: String) {
-        titleLabel.text = title
-    }
-} 
+}

@@ -30,27 +30,35 @@ final class HomeViewController: UIViewController {
         return stack
     }()
     
+    private lazy var searchController: UISearchController = {
+        let controller = UISearchController(searchResultsController: nil)
+        controller.searchResultsUpdater = self
+        controller.obscuresBackgroundDuringPresentation = false
+        controller.searchBar.placeholder = Constants.searchPlaceholder
+        return controller
+    }()
+    
     lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        let inset: CGFloat = 16
-        let spacing: CGFloat = 9
+        let inset: CGFloat = Constants.Layout.collectionInset
+        let spacing: CGFloat = Constants.Layout.collectionSpacing
         let availableWidth = UIScreen.main.bounds.width - (inset * 2) - spacing
         let itemWidth = availableWidth / 2
         
-        layout.itemSize = CGSize(width: itemWidth, height: 148) // Высота будет динамически настраиваться в делегате
-        layout.minimumLineSpacing = 0 // Вертикальный отступ между ячейками
-        layout.minimumInteritemSpacing = spacing // Горизонтальный отступ между ячейками
-        layout.sectionInset = UIEdgeInsets(top: 8, left: inset, bottom: 16, right: inset)
+        layout.itemSize = CGSize(width: itemWidth, height: Constants.Layout.cellHeight)
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = spacing
+        layout.sectionInset = UIEdgeInsets(top: Constants.Layout.collectionTopInset, left: inset, bottom: Constants.Layout.sectionBottomInset, right: inset)
         
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.backgroundColor = .clear
-        collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: "TrackerCell")
+        collectionView.register(TrackerCell.self, forCellWithReuseIdentifier: Constants.cellIdentifier)
         collectionView.register(
             HeaderView.self,
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
-            withReuseIdentifier: "HeaderView"
+            withReuseIdentifier: Constants.headerIdentifier
         )
         
         return collectionView
@@ -62,6 +70,8 @@ final class HomeViewController: UIViewController {
     private var currentDate = Date()
     private var completedTrackers: [TrackerRecord] = []
     private var visibleCategories: [TrackerCategory] = []
+    private var searchText: String = ""
+    private var searchWorkItem: DispatchWorkItem?
     
     // MARK: - Lifecycle
 
@@ -71,7 +81,7 @@ final class HomeViewController: UIViewController {
         setupNavigationItems()
         setupUI()
         setupConstraints()
-        setupTestData()
+        // setupTestData()
         updateVisibleCategories()
         updateStubViewVisibility()
     }
@@ -86,8 +96,6 @@ final class HomeViewController: UIViewController {
         }
         
         navigationItem.title = Constants.title
-        
-        let searchController = UISearchController()
         navigationItem.searchController = searchController
         
         let addButton = UIBarButtonItem(
@@ -122,6 +130,7 @@ final class HomeViewController: UIViewController {
     @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
         currentDate = sender.date
         updateVisibleCategories()
+        updateStubViewVisibility()
     }
     
     private func setupUI() {
@@ -138,7 +147,7 @@ final class HomeViewController: UIViewController {
         
         collectionView.snp.makeConstraints { make in
             make.leading.trailing.bottom.equalTo(view.layoutMarginsGuide)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(8)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(Constants.Layout.collectionTopInset)
         }
     }
     
@@ -147,8 +156,6 @@ final class HomeViewController: UIViewController {
         let weekday = calendar.component(.weekday, from: currentDate)
         let filterSchedule: Schedule
         
-        // Преобразуем системный номер дня недели (1-7, где 1 - воскресенье) 
-        // в наш формат Schedule
         switch weekday {
         case 1: filterSchedule = .sunday
         case 2: filterSchedule = .monday
@@ -162,7 +169,10 @@ final class HomeViewController: UIViewController {
         
         visibleCategories = categories.compactMap { category in
             let visibleTrackers = category.trackers.filter { tracker in
-                tracker.schedule.contains(filterSchedule)
+                let matchesSchedule = tracker.schedule.contains(filterSchedule)
+                let matchesSearch = searchText.isEmpty || 
+                    tracker.name.localizedCaseInsensitiveContains(searchText)
+                return matchesSchedule && matchesSearch
             }
             
             if visibleTrackers.isEmpty {
@@ -176,9 +186,41 @@ final class HomeViewController: UIViewController {
     }
     
     private func updateStubViewVisibility() {
-        let hasTrackers = visibleCategories.contains { !$0.trackers.isEmpty }
-        stubView.isHidden = hasTrackers
-        collectionView.isHidden = !hasTrackers
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: currentDate)
+        let filterSchedule: Schedule
+        
+        switch weekday {
+        case 1: filterSchedule = .sunday
+        case 2: filterSchedule = .monday
+        case 3: filterSchedule = .tuesday
+        case 4: filterSchedule = .wednesday
+        case 5: filterSchedule = .thursday
+        case 6: filterSchedule = .friday
+        case 7: filterSchedule = .saturday
+        default: filterSchedule = .monday
+        }
+        
+        let hasTrackersForSelectedDate = categories.contains { category in
+            category.trackers.contains { tracker in
+                tracker.schedule.contains(filterSchedule)
+            }
+        }
+        
+        stubView.isHidden = hasTrackersForSelectedDate
+        collectionView.isHidden = !hasTrackersForSelectedDate
+    }
+    
+    private func performSearch() {
+        searchWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.updateVisibleCategories()
+            self?.updateStubViewVisibility()
+        }
+        
+        searchWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Layout.searchDebounceDelay, execute: workItem)
     }
     
     private func setupTestData() {
@@ -231,7 +273,6 @@ final class HomeViewController: UIViewController {
         
         categories = [habits, irregularEvents]
         
-        // Добавим несколько выполненных трекеров для примера
         if let firstTracker = categories.first?.trackers.first {
             completedTrackers = [
                 TrackerRecord(id: firstTracker.id, date: Date()),
@@ -258,7 +299,7 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
         cellForItemAt indexPath: IndexPath
     ) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: "TrackerCell",
+            withReuseIdentifier: Constants.cellIdentifier,
             for: indexPath
         ) as? TrackerCell else {
             assertionFailure("Failed to dequeue TrackerCell")
@@ -291,7 +332,7 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
         guard kind == UICollectionView.elementKindSectionHeader,
               let header = collectionView.dequeueReusableSupplementaryView(
                 ofKind: kind,
-                withReuseIdentifier: "HeaderView",
+                withReuseIdentifier: Constants.headerIdentifier,
                 for: indexPath
               ) as? HeaderView else {
             return UICollectionReusableView()
@@ -311,7 +352,7 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         referenceSizeForHeaderInSection section: Int
     ) -> CGSize {
-        return CGSize(width: collectionView.bounds.width, height: 18)
+        return CGSize(width: collectionView.bounds.width, height: Constants.Layout.headerHeight)
     }
     
     func collectionView(
@@ -319,7 +360,7 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         insetForSectionAt section: Int
     ) -> UIEdgeInsets {
-        return UIEdgeInsets(top: 16, left: 0, bottom: 16, right: 0)
+        return UIEdgeInsets(top: Constants.Layout.sectionTopInset, left: 0, bottom: Constants.Layout.sectionBottomInset, right: 0)
     }
     
     func collectionView(
@@ -327,13 +368,12 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        let inset: CGFloat = 16
-        let spacing: CGFloat = 9
+        let inset: CGFloat = Constants.Layout.collectionInset
+        let spacing: CGFloat = Constants.Layout.collectionSpacing
         let availableWidth = collectionView.bounds.width - (inset * 2) - spacing
         let itemWidth = availableWidth / 2
         
-        // Высота карточки + отступ под кнопкой
-        let itemHeight: CGFloat = 90 + 58 // 90 для карточки и 42 для области с кнопкой (включая отступы)
+        let itemHeight: CGFloat = Constants.Layout.cellHeight
         
         return CGSize(width: itemWidth, height: itemHeight)
     }
@@ -353,7 +393,6 @@ extension HomeViewController: TrackerTypeViewControllerDelegate {
 
 extension HomeViewController: CreateTrackerViewControllerDelegate {
     func createTrackerViewController(_ viewController: CreateTrackerViewController, didCreate tracker: Tracker) {
-        // Создаем новую категорию или добавляем в существующую
         let category: TrackerCategory
         if let existingCategory = categories.first {
             let updatedTrackers = existingCategory.trackers + [tracker]
@@ -375,7 +414,6 @@ extension HomeViewController: TrackerCellDelegate {
     func trackerCellDidTapButton(_ cell: TrackerCell) {
         guard let indexPath = collectionView.indexPath(for: cell) else { return }
         
-        // Проверяем, не является ли выбранная дата будущей
         let calendar = Calendar.current
         if calendar.compare(currentDate, to: Date(), toGranularity: .day) == .orderedDescending {
             return
@@ -383,25 +421,21 @@ extension HomeViewController: TrackerCellDelegate {
         
         let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
         
-        // Проверяем, был ли трекер уже выполнен сегодня
         let isCompletedToday = completedTrackers.contains { 
             $0.id == tracker.id && 
             Calendar.current.isDate($0.date, inSameDayAs: currentDate)
         }
         
         if isCompletedToday {
-            // Удаляем запись о выполнении
             completedTrackers.removeAll { 
                 $0.id == tracker.id && 
                 Calendar.current.isDate($0.date, inSameDayAs: currentDate)
             }
         } else {
-            // Добавляем новую запись о выполнении
             let record = TrackerRecord(id: tracker.id, date: currentDate)
             completedTrackers.append(record)
         }
         
-        // Обновляем ячейку
         let completedDays = completedTrackers.filter { $0.id == tracker.id }.count
         cell.configure(
             title: tracker.name,
@@ -413,6 +447,16 @@ extension HomeViewController: TrackerCellDelegate {
     }
 }
 
+// MARK: - UISearchResultsUpdating
+
+extension HomeViewController: UISearchResultsUpdating {
+    func updateSearchResults(for searchController: UISearchController) {
+        guard let text = searchController.searchBar.text else { return }
+        searchText = text
+        performSearch()
+    }
+}
+
 extension HomeViewController {
     private enum Constants {
         static let title = "Трекеры"
@@ -420,11 +464,22 @@ extension HomeViewController {
         static let stubImage = "HomeViewStubImage"
         static let stubMessage = "Что будем отслеживать?"
         static let stubTitleFontSize: CGFloat = 12
+        static let searchPlaceholder = "Поиск"
+        static let cellIdentifier = "TrackerCell"
+        static let headerIdentifier = "HeaderView"
         
         enum Layout {
             static let stubSpacing: CGFloat = 8
             static let stubImageWidth: CGFloat = 80
             static let datePickerWidth: CGFloat = 120
+            static let collectionInset: CGFloat = 16
+            static let collectionSpacing: CGFloat = 9
+            static let headerHeight: CGFloat = 18
+            static let sectionTopInset: CGFloat = 16
+            static let sectionBottomInset: CGFloat = 16
+            static let collectionTopInset: CGFloat = 8
+            static let cellHeight: CGFloat = 148
+            static let searchDebounceDelay: Double = 0.3
         }
     }
 }
