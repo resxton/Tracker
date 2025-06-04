@@ -279,6 +279,7 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
             color: UIColor(named: tracker.color) ?? .colorSelection1,
             completed: isCompletedToday
         )
+        cell.delegate = self
         return cell
     }
     
@@ -365,6 +366,50 @@ extension HomeViewController: CreateTrackerViewControllerDelegate {
         
         updateVisibleCategories()
         updateStubViewVisibility()
+    }
+}
+
+// MARK: - TrackerCellDelegate
+
+extension HomeViewController: TrackerCellDelegate {
+    func trackerCellDidTapButton(_ cell: TrackerCell) {
+        guard let indexPath = collectionView.indexPath(for: cell) else { return }
+        
+        // Проверяем, не является ли выбранная дата будущей
+        let calendar = Calendar.current
+        if calendar.compare(currentDate, to: Date(), toGranularity: .day) == .orderedDescending {
+            return
+        }
+        
+        let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
+        
+        // Проверяем, был ли трекер уже выполнен сегодня
+        let isCompletedToday = completedTrackers.contains { 
+            $0.id == tracker.id && 
+            Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+        }
+        
+        if isCompletedToday {
+            // Удаляем запись о выполнении
+            completedTrackers.removeAll { 
+                $0.id == tracker.id && 
+                Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+            }
+        } else {
+            // Добавляем новую запись о выполнении
+            let record = TrackerRecord(id: tracker.id, date: currentDate)
+            completedTrackers.append(record)
+        }
+        
+        // Обновляем ячейку
+        let completedDays = completedTrackers.filter { $0.id == tracker.id }.count
+        cell.configure(
+            title: tracker.name,
+            emoji: tracker.emoji,
+            days: completedDays,
+            color: UIColor(named: tracker.color) ?? .colorSelection1,
+            completed: !isCompletedToday
+        )
     }
 }
 

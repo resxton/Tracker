@@ -1,6 +1,10 @@
 import UIKit
 import SnapKit
 
+protocol TrackerCellDelegate: AnyObject {
+    func trackerCellDidTapButton(_ cell: TrackerCell)
+}
+
 final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Visual Components
@@ -14,6 +18,7 @@ final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Properties
     
+    weak var delegate: TrackerCellDelegate?
     private var isCompleted: Bool = false
     
     // MARK: - Initializers
@@ -71,6 +76,7 @@ final class TrackerCell: UICollectionViewCell {
         plusButton.tintColor = .white
         plusButton.backgroundColor = .systemGreen
         plusButton.layer.cornerRadius = 17
+        plusButton.addTarget(self, action: #selector(plusButtonTapped), for: .touchUpInside)
         contentView.addSubview(plusButton)
     }
 
@@ -115,7 +121,10 @@ final class TrackerCell: UICollectionViewCell {
         cardView.backgroundColor = color
         plusButton.backgroundColor = color
         isCompleted = completed
-        
+        updateButtonStyle()
+    }
+    
+    private func updateButtonStyle() {
         plusButton.setImage(
             isCompleted ? UIImage(systemName: "checkmark")?.withTintColor(.white) : UIImage(named: "PlusIcon"),
             for: .normal
@@ -139,5 +148,11 @@ final class TrackerCell: UICollectionViewCell {
         default:
             return "\(count) дней"
         }
+    }
+    
+    // MARK: - Actions
+    
+    @objc private func plusButtonTapped() {
+        delegate?.trackerCellDidTapButton(self)
     }
 }
