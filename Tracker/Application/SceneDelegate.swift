@@ -16,14 +16,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let rootViewController = container.makeMainTabBarController()
         
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithDefaultBackground()
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        
-        UINavigationBar.appearance().tintColor = .ypBlack
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = .ypWhite
+        tabBarAppearance.shadowColor = UIColor(white: 0, alpha: 0.5) // или свой цвет
 
+        UITabBar.appearance().standardAppearance = tabBarAppearance
         if #available(iOS 15.0, *) {
             UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         }
+        
+        UINavigationBar.appearance().tintColor = .ypBlack
         
         window?.rootViewController = rootViewController
         window?.makeKeyAndVisible()

@@ -109,6 +109,8 @@ final class HomeViewController: UIViewController {
         let datePicker = UIDatePicker()
         datePicker.datePickerMode = .date
         datePicker.preferredDatePickerStyle = .compact
+        datePicker.tintColor = .ypBlue
+        datePicker.clipsToBounds = true
         datePicker.addTarget(self, action: #selector(datePickerValueChanged(_:)), for: .valueChanged)
         datePicker.date = currentDate
         
@@ -134,6 +136,7 @@ final class HomeViewController: UIViewController {
     }
     
     private func setupUI() {
+        view.backgroundColor = .ypWhite
         view.addSubview(stubView)
         view.addSubview(collectionView)
         stubView.isHidden = true

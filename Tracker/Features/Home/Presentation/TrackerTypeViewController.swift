@@ -12,7 +12,8 @@ final class TrackerTypeViewController: UIViewController {
     private lazy var habitButton: UIButton = {
         let button = UIButton()
         button.setTitle(TrackerType.habit.normalTitle, for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.ypWhite, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         button.backgroundColor = .ypBlack
         button.layer.cornerRadius = 16
         button.addTarget(self, action: #selector(habitButtonTapped), for: .touchUpInside)
@@ -22,7 +23,8 @@ final class TrackerTypeViewController: UIViewController {
     private lazy var irregularEventButton: UIButton = {
         let button = UIButton()
         button.setTitle(TrackerType.irregularEvent.normalTitle, for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.ypWhite, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         button.backgroundColor = .ypBlack
         button.layer.cornerRadius = 16
         button.addTarget(self, action: #selector(irregularEventButtonTapped), for: .touchUpInside)
