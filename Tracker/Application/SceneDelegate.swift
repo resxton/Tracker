@@ -18,7 +18,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         tabBarAppearance.backgroundColor = .ypWhite
-        tabBarAppearance.shadowColor = UIColor(white: 0, alpha: 0.5) // или свой цвет
+        tabBarAppearance.shadowColor = UIColor(white: 0, alpha: 0.5)
 
         UITabBar.appearance().standardAppearance = tabBarAppearance
         if #available(iOS 15.0, *) {
