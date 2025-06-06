@@ -9,6 +9,27 @@ final class CreateTrackerViewController: UIViewController {
     
     // MARK: - Visual Components
     
+    private let scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.showsVerticalScrollIndicator = false
+        return scrollView
+    }()
+    
+    private let contentView: UIView = {
+        let view = UIView()
+        return view
+    }()
+    
+    private let buttonsStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 0
+        stack.backgroundColor = .ypBackground
+        stack.layer.cornerRadius = 16
+        stack.clipsToBounds = true
+        return stack
+    }()
+    
     private let nameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Введите название трекера"
@@ -24,16 +45,72 @@ final class CreateTrackerViewController: UIViewController {
         return textField
     }()
     
+    private lazy var categoryButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("Категория", for: .normal)
+        button.setTitleColor(.ypBlack, for: .normal)
+        button.backgroundColor = .clear
+        button.contentHorizontalAlignment = .left
+        button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
+        button.addTarget(self, action: #selector(categoryButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
     private lazy var scheduleButton: UIButton = {
         let button = UIButton()
         button.setTitle("Расписание", for: .normal)
         button.setTitleColor(.ypBlack, for: .normal)
-        button.backgroundColor = .ypBackground
-        button.layer.cornerRadius = 16
+        button.backgroundColor = .clear
         button.contentHorizontalAlignment = .left
         button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
         button.addTarget(self, action: #selector(scheduleButtonTapped), for: .touchUpInside)
         return button
+    }()
+    
+    private let separatorView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .ypGrey
+        return view
+    }()
+    
+    private lazy var emojiCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.itemSize = CGSize(width: 52, height: 52)
+        layout.minimumInteritemSpacing = 5
+        layout.minimumLineSpacing = 0
+        let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collection.register(EmojiCell.self, forCellWithReuseIdentifier: "EmojiCell")
+        collection.register(
+            HeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: "HeaderView"
+        )
+        collection.delegate = self
+        collection.dataSource = self
+        collection.backgroundColor = .clear
+        collection.allowsMultipleSelection = false
+        collection.isScrollEnabled = false
+        return collection
+    }()
+    
+    private lazy var colorCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.itemSize = CGSize(width: 52, height: 52)
+        layout.minimumInteritemSpacing = 5
+        layout.minimumLineSpacing = 0
+        let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collection.register(ColorCell.self, forCellWithReuseIdentifier: "ColorCell")
+        collection.register(
+            HeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: "HeaderView"
+        )
+        collection.delegate = self
+        collection.dataSource = self
+        collection.backgroundColor = .clear
+        collection.allowsMultipleSelection = false
+        collection.isScrollEnabled = false
+        return collection
     }()
     
     private lazy var cancelButton: UIButton = {
@@ -69,11 +146,26 @@ final class CreateTrackerViewController: UIViewController {
         return stack
     }()
     
-    // MARK: - Properties
+    // MARK: - Private Properties
     
     weak var delegate: CreateTrackerViewControllerDelegate?
     private let trackerType: TrackerType
     private var schedule: Schedule = []
+    private var selectedEmoji: String?
+    private var selectedColor: UIColor?
+    
+    private let emojis = ["🙂", "😻", "🌺", "🐶", "❤️", "😱",
+                         "😇", "😡", "🥶", "🤔", "🙌", "🍔",
+                         "🥦", "🏓", "🥇", "🎸", "🏝", "😪"]
+    
+    private let colors: [UIColor] = [
+        .colorSelection1, .colorSelection2, .colorSelection3,
+        .colorSelection4, .colorSelection5, .colorSelection6,
+        .colorSelection7, .colorSelection8, .colorSelection9,
+        .colorSelection10, .colorSelection11, .colorSelection12,
+        .colorSelection13, .colorSelection14, .colorSelection15,
+        .colorSelection16, .colorSelection17, .colorSelection18
+    ]
     
     // MARK: - Initializers
     
@@ -114,26 +206,78 @@ final class CreateTrackerViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .white
         
-        view.addSubview(nameTextField)
+        view.addSubview(scrollView)
         view.addSubview(buttonsStack)
         
+        scrollView.addSubview(contentView)
+        
+        contentView.addSubview(nameTextField)
+        contentView.addSubview(buttonsStackView)
+        contentView.addSubview(emojiCollectionView)
+        contentView.addSubview(colorCollectionView)
+        
         if trackerType == .habit {
-            view.addSubview(scheduleButton)
-            
-            scheduleButton.snp.makeConstraints { make in
-                make.top.equalTo(nameTextField.snp.bottom).offset(24)
-                make.leading.trailing.equalToSuperview().inset(16)
-                make.height.equalTo(75)
-            }
+            buttonsStackView.addArrangedSubview(categoryButton)
+            buttonsStackView.addArrangedSubview(separatorView)
+            buttonsStackView.addArrangedSubview(scheduleButton)
+        } else {
+            buttonsStackView.addArrangedSubview(categoryButton)
         }
         
         buttonsStack.addArrangedSubview(cancelButton)
         buttonsStack.addArrangedSubview(createButton)
         
+        setupConstraints()
+    }
+    
+    private func setupConstraints() {
+        scrollView.snp.makeConstraints { make in
+            make.top.leading.trailing.equalTo(view.safeAreaLayoutGuide)
+            make.bottom.equalTo(buttonsStack.snp.top).offset(-16)
+        }
+        
+        contentView.snp.makeConstraints { make in
+            make.edges.equalTo(scrollView)
+            make.width.equalTo(scrollView)
+        }
+        
         nameTextField.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaLayoutGuide).offset(24)
+            make.top.equalToSuperview().offset(24)
             make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(75)
+        }
+        
+        buttonsStackView.snp.makeConstraints { make in
+            make.top.equalTo(nameTextField.snp.bottom).offset(24)
+            make.leading.trailing.equalToSuperview().inset(16)
+        }
+        
+        separatorView.snp.makeConstraints { make in
+            make.height.equalTo(0.5)
+            make.leading.trailing.equalToSuperview().inset(16)
+        }
+        
+        categoryButton.snp.makeConstraints { make in
+            make.height.equalTo(75)
+        }
+        
+        if trackerType == .habit {
+            scheduleButton.snp.makeConstraints { make in
+                make.height.equalTo(75)
+            }
+        }
+        
+        emojiCollectionView.snp.makeConstraints { make in
+            make.top.equalTo(buttonsStackView.snp.bottom).offset(32)
+            make.leading.trailing.equalToSuperview()
+            make.height.equalTo(204)
+        }
+        
+        colorCollectionView.snp.makeConstraints { make in
+            make.top.equalTo(emojiCollectionView.snp.bottom).offset(16)
+            make.leading.trailing.equalToSuperview()
+            make.height.equalTo(204)
+            make.bottom.equalToSuperview().offset(-16)
         }
         
         buttonsStack.snp.makeConstraints { make in
@@ -148,9 +292,16 @@ final class CreateTrackerViewController: UIViewController {
     }
     
     private func updateCreateButtonState() {
-        let isEnabled = !nameTextField.text!.isEmpty && (trackerType == .irregularEvent || !schedule.isEmpty)
+        let isEnabled = !nameTextField.text!.isEmpty && 
+                       selectedEmoji != nil && 
+                       selectedColor != nil &&
+                       (trackerType == .irregularEvent || !schedule.isEmpty)
         createButton.isEnabled = isEnabled
         createButton.backgroundColor = isEnabled ? .ypBlack : .ypGrey
+    }
+    
+    @objc private func categoryButtonTapped() {
+        // TODO: Implement category selection
     }
     
     @objc private func scheduleButtonTapped() {
@@ -165,18 +316,102 @@ final class CreateTrackerViewController: UIViewController {
     }
     
     @objc private func createButtonTapped() {
-        guard let name = nameTextField.text, !name.isEmpty else { return }
+        guard let name = nameTextField.text,
+              let emoji = selectedEmoji,
+              let _ = selectedColor,
+              !name.isEmpty else { return }
         
         let tracker = Tracker(
             id: UUID(),
             name: name,
-            color: "colorSelection1", // TODO: Добавить выбор цвета
-            emoji: "😊", // TODO: Добавить выбор эмодзи
+            color: "colorSelection1", // TODO: Преобразовать цвет в строку
+            emoji: emoji,
             schedule: trackerType == .habit ? schedule : .everyDay
         )
         
         delegate?.createTrackerViewController(self, didCreate: tracker)
         dismiss(animated: true)
+    }
+}
+
+// MARK: - UICollectionViewDelegate & UICollectionViewDataSource
+
+extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionViewDataSource {
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return collectionView == emojiCollectionView ? emojis.count : colors.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if collectionView == emojiCollectionView {
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "EmojiCell",
+                for: indexPath
+            ) as? EmojiCell else {
+                return UICollectionViewCell()
+            }
+            cell.configure(with: emojis[indexPath.item])
+            return cell
+        } else {
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ColorCell",
+                for: indexPath
+            ) as? ColorCell else {
+                return UICollectionViewCell()
+            }
+            cell.configure(with: colors[indexPath.item])
+            return cell
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if collectionView == emojiCollectionView {
+            selectedEmoji = emojis[indexPath.item]
+        } else {
+            selectedColor = colors[indexPath.item]
+        }
+        updateCreateButtonState()
+    }
+    
+    func collectionView(
+        _ collectionView: UICollectionView,
+        viewForSupplementaryElementOfKind kind: String,
+        at indexPath: IndexPath
+    ) -> UICollectionReusableView {
+        guard let header = collectionView.dequeueReusableSupplementaryView(
+            ofKind: kind,
+            withReuseIdentifier: "HeaderView",
+            for: indexPath
+        ) as? HeaderView else {
+            return UICollectionReusableView()
+        }
+        
+        let title = collectionView == emojiCollectionView ? "Emoji" : "Цвет"
+        header.configure(with: title)
+        return header
+    }
+}
+
+// MARK: - UICollectionViewDelegateFlowLayout
+
+extension CreateTrackerViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout collectionViewLayout: UICollectionViewLayout,
+        referenceSizeForHeaderInSection section: Int
+    ) -> CGSize {
+        return CGSize(width: collectionView.bounds.width, height: 18)
+    }
+    
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout collectionViewLayout: UICollectionViewLayout,
+        insetForSectionAt section: Int
+    ) -> UIEdgeInsets {
+        return UIEdgeInsets(top: 24, left: 18, bottom: 24, right: 18)
     }
 }
 
