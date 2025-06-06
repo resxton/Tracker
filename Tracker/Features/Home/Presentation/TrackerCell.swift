@@ -146,7 +146,7 @@ final class TrackerCell: UICollectionViewCell {
     
     private func updateButtonStyle() {
         plusButton.setImage(
-            isCompleted ? UIImage(systemName: "checkmark")?.withTintColor(.white) : UIImage(named: "PlusIcon"),
+            isCompleted ? UIImage(systemName: "checkmark")?.withTintColor(.white) : UIImage(resource: .plusIcon),
             for: .normal
         )
         plusButton.alpha = isCompleted ? Constants.completedButtonAlpha : 1.0
