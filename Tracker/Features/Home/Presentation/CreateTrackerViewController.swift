@@ -254,7 +254,8 @@ final class CreateTrackerViewController: UIViewController {
         
         separatorView.snp.makeConstraints { make in
             make.height.equalTo(0.5)
-            make.leading.trailing.equalToSuperview().inset(16)
+            make.leading.equalToSuperview().inset(16)
+            make.trailing.equalToSuperview().inset(-16)
         }
         
         categoryButton.snp.makeConstraints { make in
