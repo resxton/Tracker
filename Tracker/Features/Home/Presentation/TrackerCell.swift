@@ -58,12 +58,16 @@ final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Public Methods
     
-    func configure(title: String, emoji: String, days: Int, color: UIColor, completed: Bool = false) {
+    func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false) {
         titleLabel.text = title
         emojiLabel.text = emoji
         daysLabel.text = formatDaysCount(days)
-        cardView.backgroundColor = color
-        plusButton.backgroundColor = color
+        if let colorAsset = UIColor(named: color) {
+            cardView.backgroundColor = colorAsset
+            plusButton.backgroundColor = colorAsset
+        } else {
+            print("There is no color named \(color)")
+        }
         isCompleted = completed
         updateButtonStyle()
     }

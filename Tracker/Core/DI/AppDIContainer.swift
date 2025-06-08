@@ -2,15 +2,41 @@ import UIKit
 
 final class AppDIContainer {
     
+    // MARK: - Private Properties
+    
+    private let coreDataStack = CoreDataStack()
+    private lazy var trackerStore: TrackerStore = {
+        TrackerStore(coreDataStack: coreDataStack)
+    }()
+    private lazy var trackerCategoryStore: TrackerCategoryStore = {
+        TrackerCategoryStore(coreDataStack: coreDataStack)
+    }()
+    private lazy var trackerRecordStore: TrackerRecordStore = {
+        TrackerRecordStore(coreDataStack: coreDataStack)
+    }()
+    private lazy var trackerCategoryDataProvider: TrackerCategoryDataProvider = {
+        TrackerCategoryDataProvider(context: coreDataStack.viewContext)
+    }()
+    private lazy var trackerDataProvider: TrackerDataProviderProtocol = {
+        TrackerDataProvider(context: coreDataStack.viewContext)
+    }()
+    
     // MARK: - Public Methods
     
-    public func makeHomeViewController() -> UINavigationController {
+    func makeHomeViewController() -> UINavigationController {
         guard let tabIcon = UIImage(named: Constants.homeViewTabIcon)?
             .withRenderingMode(.alwaysTemplate) else {
             fatalError("[AppDIContainer] – Не существует картинки для таба HomeView")
         }
         
-        let homeView = HomeViewController()
+        let homeView = HomeViewController(
+            trackerStore: trackerStore,
+            trackerCategoryStore: trackerCategoryStore,
+            trackerRecordStore: trackerRecordStore,
+            trackerCategoryDataProvider: trackerCategoryDataProvider,
+            trackerDataProvider: trackerDataProvider
+        )
+        
         homeView.tabBarItem = UITabBarItem(
             title: Constants.homeViewTabTitle,
             image: tabIcon,
@@ -23,7 +49,7 @@ final class AppDIContainer {
         return navigationController
     }
     
-    public func makeStatsViewController() -> StatsViewController {
+    func makeStatsViewController() -> StatsViewController {
         guard let tabIcon = UIImage(named: Constants.statsViewTabIcon)?
             .withRenderingMode(.alwaysTemplate) else {
             fatalError("[AppDIContainer] – Не существует картинки для таба StatsView")

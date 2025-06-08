@@ -33,6 +33,7 @@ final class CreateTrackerViewController: UIViewController {
     private let nameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Введите название трекера"
+        textField.text = "Test"
         textField.backgroundColor = .ypBackground
         textField.layer.cornerRadius = 16
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 0))
@@ -152,19 +153,31 @@ final class CreateTrackerViewController: UIViewController {
     private let trackerType: TrackerType
     private var schedule: Schedule = []
     private var selectedEmoji: String?
-    private var selectedColor: UIColor?
+    private var selectedColor: NamedColor?
     
     private let emojis = ["🙂", "😻", "🌺", "🐶", "❤️", "😱",
                          "😇", "😡", "🥶", "🤔", "🙌", "🍔",
                          "🥦", "🏓", "🥇", "🎸", "🏝", "😪"]
     
-    private let colors: [UIColor] = [
-        .colorSelection1, .colorSelection2, .colorSelection3,
-        .colorSelection4, .colorSelection5, .colorSelection6,
-        .colorSelection7, .colorSelection8, .colorSelection9,
-        .colorSelection10, .colorSelection11, .colorSelection12,
-        .colorSelection13, .colorSelection14, .colorSelection15,
-        .colorSelection16, .colorSelection17, .colorSelection18
+    private let colors: [NamedColor] = [
+        NamedColor(name: "ColorSelection1", color: .colorSelection1),
+        NamedColor(name: "ColorSelection2", color: .colorSelection2),
+        NamedColor(name: "ColorSelection3", color: .colorSelection3),
+        NamedColor(name: "ColorSelection4", color: .colorSelection4),
+        NamedColor(name: "ColorSelection5", color: .colorSelection5),
+        NamedColor(name: "ColorSelection6", color: .colorSelection6),
+        NamedColor(name: "ColorSelection7", color: .colorSelection7),
+        NamedColor(name: "ColorSelection8", color: .colorSelection8),
+        NamedColor(name: "ColorSelection9", color: .colorSelection9),
+        NamedColor(name: "ColorSelection10", color: .colorSelection10),
+        NamedColor(name: "ColorSelection11", color: .colorSelection11),
+        NamedColor(name: "ColorSelection12", color: .colorSelection12),
+        NamedColor(name: "ColorSelection13", color: .colorSelection13),
+        NamedColor(name: "ColorSelection14", color: .colorSelection14),
+        NamedColor(name: "ColorSelection15", color: .colorSelection15),
+        NamedColor(name: "ColorSelection16", color: .colorSelection16),
+        NamedColor(name: "ColorSelection17", color: .colorSelection17),
+        NamedColor(name: "ColorSelection18", color: .colorSelection18)
     ]
     
     // MARK: - Initializers
@@ -254,8 +267,6 @@ final class CreateTrackerViewController: UIViewController {
         
         separatorView.snp.makeConstraints { make in
             make.height.equalTo(0.5)
-            make.leading.equalToSuperview().inset(16)
-            make.trailing.equalToSuperview().inset(-16)
         }
         
         categoryButton.snp.makeConstraints { make in
@@ -319,17 +330,17 @@ final class CreateTrackerViewController: UIViewController {
     @objc private func createButtonTapped() {
         guard let name = nameTextField.text,
               let emoji = selectedEmoji,
-              let _ = selectedColor,
+              let selectedColor,
               !name.isEmpty else { return }
         
         let tracker = Tracker(
             id: UUID(),
             name: name,
-            color: "colorSelection1", // TODO: Преобразовать цвет в строку
+            color: selectedColor.name,
             emoji: emoji,
             schedule: trackerType == .habit ? schedule : .everyDay
         )
-        
+
         delegate?.createTrackerViewController(self, didCreate: tracker)
         dismiss(animated: true)
     }
@@ -363,7 +374,7 @@ extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionVie
             ) as? ColorCell else {
                 return UICollectionViewCell()
             }
-            cell.configure(with: colors[indexPath.item])
+            cell.configure(with: colors[indexPath.item].color)
             return cell
         }
     }
