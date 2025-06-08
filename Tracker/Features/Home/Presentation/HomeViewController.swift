@@ -266,11 +266,8 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
             return UICollectionViewCell()
         }
 
-        let completedDays = completedTrackers.filter { $0.id == tracker.id }.count
-        let isCompletedToday = completedTrackers.contains {
-            $0.id == tracker.id &&
-            Calendar.current.isDate($0.date, inSameDayAs: currentDate)
-        }
+        let completedDays = (try? trackerRecordStore.countRecords(for: tracker.id)) ?? 0
+        let isCompletedToday = (try? trackerRecordStore.isRecordExist(for: tracker.id, on: currentDate)) ?? false
 
         cell.configure(
             title: tracker.name,
@@ -367,37 +364,38 @@ extension HomeViewController: CreateTrackerViewControllerDelegate {
 extension HomeViewController: TrackerCellDelegate {
     func trackerCellDidTapButton(_ cell: TrackerCell) {
         guard let indexPath = collectionView.indexPath(for: cell) else { return }
-        
+
         let calendar = Calendar.current
         if calendar.compare(currentDate, to: Date(), toGranularity: .day) == .orderedDescending {
             return
         }
-        
-        let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
-        
-        let isCompletedToday = completedTrackers.contains { 
-            $0.id == tracker.id && 
-            Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+
+        guard let tracker = trackerDataProvider.tracker(at: indexPath) else {
+            print("Tracker not found at \(indexPath)")
+            return
         }
-        
-        if isCompletedToday {
-            completedTrackers.removeAll { 
-                $0.id == tracker.id && 
-                Calendar.current.isDate($0.date, inSameDayAs: currentDate)
+
+        do {
+            let isCompletedToday = try trackerRecordStore.isRecordExist(for: tracker.id, on: currentDate)
+
+            if isCompletedToday {
+                try trackerRecordStore.removeRecord(for: tracker.id, on: currentDate)
+            } else {
+                try trackerRecordStore.addRecord(for: tracker.id, on: currentDate)
             }
-        } else {
-            let record = TrackerRecord(id: tracker.id, date: currentDate)
-            completedTrackers.append(record)
+
+            let completedDays = try trackerRecordStore.countRecords(for: tracker.id)
+
+            cell.configure(
+                title: tracker.name,
+                emoji: tracker.emoji,
+                days: completedDays,
+                color: tracker.color,
+                completed: !isCompletedToday
+            )
+        } catch {
+            print("Ошибка работы с TrackerRecordStore: \(error)")
         }
-        
-        let completedDays = completedTrackers.filter { $0.id == tracker.id }.count
-        cell.configure(
-            title: tracker.name,
-            emoji: tracker.emoji,
-            days: completedDays,
-            color: tracker.color,
-            completed: !isCompletedToday
-        )
     }
 }
 

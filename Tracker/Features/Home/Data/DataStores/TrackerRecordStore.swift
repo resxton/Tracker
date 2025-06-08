@@ -13,52 +13,68 @@ final class TrackerRecordStore {
 
     // MARK: - Create
 
-    func create(record: TrackerRecord, trackerID: UUID) throws {
-        let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", trackerID as CVarArg)
+    /// Создаёт новую запись выполнения трекера на дату, если её ещё нет
+    func addRecord(for trackerID: UUID, on date: Date) throws {
+        guard try !isRecordExist(for: trackerID, on: date) else { return }
+        
+        let trackerRequest: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
+        trackerRequest.predicate = NSPredicate(format: "id == %@", trackerID as CVarArg)
 
-        guard let trackerCD = try viewContext.fetch(request).first else {
+        guard let trackerCD = try viewContext.fetch(trackerRequest).first else {
             throw NSError(domain: "TrackerRecordStore", code: 404, userInfo: [NSLocalizedDescriptionKey: "Tracker not found"])
         }
 
         let recordCD = TrackerRecordCD(context: viewContext)
-        recordCD.id = record.id
-        recordCD.date = record.date
+        recordCD.id = UUID()
+        recordCD.date = date
         recordCD.tracker = trackerCD
 
         try save()
     }
 
-    // MARK: - Fetch
+    // MARK: - Check existence
 
-    func fetchAll() throws -> [TrackerRecord] {
-        let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
-        let recordsCD = try viewContext.fetch(request)
-        return recordsCD.compactMap { $0.toDomain() }
-    }
-
-    func fetch(for trackerID: UUID, on date: Date) throws -> TrackerRecord? {
+    /// Проверяет, есть ли запись выполнения трекера на дату
+    func isRecordExist(for trackerID: UUID, on date: Date) throws -> Bool {
         let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "tracker.id == %@", trackerID as CVarArg),
             NSPredicate(format: "date == %@", date as NSDate)
         ])
-        return try viewContext.fetch(request).first?.toDomain()
+        let count = try viewContext.count(for: request)
+        return count > 0
+    }
+
+    // MARK: - Count
+
+    /// Считает количество выполненных дней для трекера
+    func countRecords(for trackerID: UUID) throws -> Int {
+        let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
+        request.predicate = NSPredicate(format: "tracker.id == %@", trackerID as CVarArg)
+        let count = try viewContext.count(for: request)
+        return count
     }
 
     // MARK: - Delete
 
-    func delete(recordID: UUID) throws {
+    /// Удаляет запись выполнения трекера на конкретную дату, если она существует
+    func removeRecord(for trackerID: UUID, on date: Date) throws {
         let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", recordID as CVarArg)
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "tracker.id == %@", trackerID as CVarArg),
+            NSPredicate(format: "date == %@", date as NSDate)
+        ])
 
-        if let recordCD = try viewContext.fetch(request).first {
-            viewContext.delete(recordCD)
-            try save()
+        let records = try viewContext.fetch(request)
+        for record in records {
+            viewContext.delete(record)
         }
+
+        try save()
     }
 
-    func deleteAll(for trackerID: UUID) throws {
+    /// Удаляет все записи выполнения трекера
+    func removeAllRecords(for trackerID: UUID) throws {
         let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
         request.predicate = NSPredicate(format: "tracker.id == %@", trackerID as CVarArg)
 
@@ -78,6 +94,7 @@ final class TrackerRecordStore {
         }
     }
 }
+
 
 extension TrackerRecordCD {
     func toDomain() -> TrackerRecord? {
