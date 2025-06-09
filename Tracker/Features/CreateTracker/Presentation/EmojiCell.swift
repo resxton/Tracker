@@ -11,6 +11,15 @@ final class EmojiCell: UICollectionViewCell {
         return label
     }()
     
+    // MARK: - Public Properties
+    
+    override var isSelected: Bool {
+        didSet {
+            backgroundColor = isSelected ? .ypLightGray : .clear
+            layer.cornerRadius = 16
+        }
+    }
+    
     // MARK: - Initializers
     
     override init(frame: CGRect) {
@@ -20,15 +29,6 @@ final class EmojiCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    // MARK: - Override Methods
-    
-    override var isSelected: Bool {
-        didSet {
-            backgroundColor = isSelected ? .ypLightGray : .clear
-            layer.cornerRadius = 16
-        }
     }
     
     // MARK: - Public Methods

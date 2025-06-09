@@ -1,25 +1,19 @@
 import CoreData
 
-protocol TrackerDataProviderProtocol: AnyObject {
-    var delegate: TrackerDataProviderDelegate? { get set }
-    var numberOfSections: Int { get }
-    func numberOfItems(in section: Int) -> Int
-    func tracker(at indexPath: IndexPath) -> Tracker?
-    func titleForSection(_ section: Int) -> String?
-    func updateFilter(schedule: Schedule?)
-}
-
-protocol TrackerDataProviderDelegate: AnyObject {
-    func didChangeContent()
-}
-
 final class TrackerDataProvider: NSObject {
+    
+    // MARK: - Public Properties
+    
+    weak var delegate: TrackerDataProviderDelegate?
+    
+    // MARK: - Private Properties
+    
     private let fetchedResultsController: NSFetchedResultsController<TrackerCD>
     private let viewContext: NSManagedObjectContext
     private var filterScheduleMask: Int64? = nil
 
-    weak var delegate: TrackerDataProviderDelegate?
-
+    // MARK: - Initializers
+    
     init(context: NSManagedObjectContext) {
         self.viewContext = context
 
@@ -47,12 +41,16 @@ final class TrackerDataProvider: NSObject {
     }
 }
 
+// MARK: - NSFetchedResultsControllerDelegate
+
 extension TrackerDataProvider: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("NSFetchedResultsController content did change")
         delegate?.didChangeContent()
     }
 }
+
+// MARK: - TrackerDataProviderProtocol
 
 extension TrackerDataProvider: TrackerDataProviderProtocol {
     var numberOfSections: Int {
@@ -80,13 +78,24 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
         return title
     }
     
-    func updateFilter(schedule: Schedule?) {
-        if let schedule = schedule {
+    func updateFilter(schedule: Schedule?, searchText: String?) {
+        var predicates: [NSPredicate] = []
+        
+        if let schedule = schedule, !schedule.isEmpty {
             filterScheduleMask = Int64(schedule.rawValue)
-            fetchedResultsController.fetchRequest.predicate = NSPredicate(format: "schedule & %d != 0", filterScheduleMask!)
+            predicates.append(NSPredicate(format: "schedule & %d != 0", filterScheduleMask!))
         } else {
             filterScheduleMask = nil
+        }
+        
+        if let searchText = searchText, !searchText.isEmpty {
+            predicates.append(NSPredicate(format: "name CONTAINS[cd] %@", searchText))
+        }
+        
+        if predicates.isEmpty {
             fetchedResultsController.fetchRequest.predicate = nil
+        } else {
+            fetchedResultsController.fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
         do {
             try fetchedResultsController.performFetch()

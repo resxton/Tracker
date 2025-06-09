@@ -1,10 +1,6 @@
 import UIKit
 import SnapKit
 
-protocol CreateTrackerViewControllerDelegate: AnyObject {
-    func createTrackerViewController(_ viewController: CreateTrackerViewController, didCreate tracker: Tracker)
-}
-
 final class CreateTrackerViewController: UIViewController {
     
     // MARK: - Visual Components
@@ -25,6 +21,8 @@ final class CreateTrackerViewController: UIViewController {
         stack.axis = .vertical
         stack.spacing = 0
         stack.backgroundColor = .ypBackground
+        stack.isLayoutMarginsRelativeArrangement = true
+        stack.layoutMargins = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         stack.layer.cornerRadius = 16
         stack.clipsToBounds = true
         return stack
@@ -265,10 +263,12 @@ final class CreateTrackerViewController: UIViewController {
             make.leading.trailing.equalToSuperview().inset(16)
         }
         
-        separatorView.snp.makeConstraints { make in
-            make.height.equalTo(0.5)
+        if trackerType == .habit {
+            separatorView.snp.makeConstraints { make in
+                make.height.equalTo(0.5)
+            }
         }
-        
+
         categoryButton.snp.makeConstraints { make in
             make.height.equalTo(75)
         }
@@ -313,7 +313,7 @@ final class CreateTrackerViewController: UIViewController {
     }
     
     @objc private func categoryButtonTapped() {
-        // TODO: Implement category selection
+        // TODO: Добавить экран выбора категории
     }
     
     @objc private func scheduleButtonTapped() {

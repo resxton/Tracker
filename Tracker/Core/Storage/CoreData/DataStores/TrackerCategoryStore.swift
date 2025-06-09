@@ -1,20 +1,25 @@
 import CoreData
 
 final class TrackerCategoryStore {
+    
+    // MARK: - Private Properties
+    
     private let coreDataStack: CoreDataStack
+    private var viewContext: NSManagedObjectContext {
+        coreDataStack.viewContext
+    }
     private lazy var trackerStore: TrackerStore = {
         .init(coreDataStack: coreDataStack)
     }()
     
+    // MARK: - Initializers
+    
     init(coreDataStack: CoreDataStack) {
         self.coreDataStack = coreDataStack
     }
+
     
-    private var viewContext: NSManagedObjectContext {
-        coreDataStack.viewContext
-    }
-    
-    // MARK: - Create
+    // MARK: - Public Methods
 
     func create(_ category: TrackerCategory) throws {
         let categoryCD = TrackerCategoryCD(context: viewContext)
@@ -34,17 +39,13 @@ final class TrackerCategoryStore {
         categoryCD.trackers = NSSet(array: trackerCDs)
         try save()
     }
-    
-    // MARK: - Read
 
     func fetchAll() throws -> [TrackerCategory] {
         let request: NSFetchRequest<TrackerCategoryCD> = TrackerCategoryCD.fetchRequest()
         let categoriesCD = try viewContext.fetch(request)
         return categoriesCD.compactMap { $0.toDomain() }
     }
-
-    // MARK: - Update
-
+    
     func update(_ category: TrackerCategory) throws {
         let request: NSFetchRequest<TrackerCategoryCD> = TrackerCategoryCD.fetchRequest()
         request.predicate = NSPredicate(format: "title == %@", category.title)
@@ -73,8 +74,6 @@ final class TrackerCategoryStore {
         try save()
     }
 
-    // MARK: - Delete
-
     func delete(_ category: TrackerCategory) throws {
         let request: NSFetchRequest<TrackerCategoryCD> = TrackerCategoryCD.fetchRequest()
         request.predicate = NSPredicate(format: "title == %@", category.title)
@@ -87,23 +86,11 @@ final class TrackerCategoryStore {
         try save()
     }
 
-    // MARK: - Save
+    // MARK: - Private Methods
 
     private func save() throws {
         if viewContext.hasChanges {
             try viewContext.save()
         }
-    }
-}
-
-extension TrackerCategoryCD {
-    func toDomain() -> TrackerCategory? {
-        guard let title = title,
-              let trackersCD = trackers as? Set<TrackerCD> else {
-            return nil
-        }
-
-        let trackers = trackersCD.compactMap { $0.toDomain() }
-        return TrackerCategory(title: title, trackers: trackers)
     }
 }

@@ -67,27 +67,23 @@ final class HomeViewController: UIViewController {
     private let trackerStore: TrackerStore
     private let trackerCategoryStore: TrackerCategoryStore
     private let trackerRecordStore: TrackerRecordStore
-    private let trackerCategoryDataProvider: TrackerCategoryDataProvider
     private let trackerDataProvider: TrackerDataProviderProtocol
 
-    private var categories: [TrackerCategory] = []
-    private var currentDate = Date()
-    private var completedTrackers: [TrackerRecord] = []
-    private var visibleCategories: [TrackerCategory] = []
+    private var currentDate = Date().startOfDay()
     private var searchText: String = ""
     private var searchWorkItem: DispatchWorkItem?
+    
+    // MARK: - Initializers
     
     init(
         trackerStore: TrackerStore,
         trackerCategoryStore: TrackerCategoryStore,
         trackerRecordStore: TrackerRecordStore,
-        trackerCategoryDataProvider: TrackerCategoryDataProvider,
         trackerDataProvider: TrackerDataProviderProtocol
     ) {
         self.trackerStore = trackerStore
         self.trackerCategoryStore = trackerCategoryStore
         self.trackerRecordStore = trackerRecordStore
-        self.trackerCategoryDataProvider = trackerCategoryDataProvider
         self.trackerDataProvider = trackerDataProvider
         super.init(nibName: nil, bundle: nil)
     }
@@ -106,7 +102,6 @@ final class HomeViewController: UIViewController {
         setupNavigationItems()
         setupUI()
         setupConstraints()
-        // setupTestData()
         updateVisibleCategories()
         updateFilter()
         updateUI()
@@ -114,6 +109,12 @@ final class HomeViewController: UIViewController {
     
     // MARK: - Private Methods
     
+    @objc private func datePickerChanged(_ sender: UIDatePicker) {
+        currentDate = sender.date.startOfDay()
+        updateFilter()
+        updateUI()
+    }
+
     private func setupNavigationItems() {
         guard let leftNavIcon = UIImage(named: Constants.addButtonIcon)?
             .withRenderingMode(.alwaysTemplate)
@@ -144,6 +145,7 @@ final class HomeViewController: UIViewController {
             make.width.equalTo(Constants.Layout.datePickerWidth)
         }
         
+        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
         let rightNavItem = UIBarButtonItem(customView: datePicker)
         navigationItem.rightBarButtonItem = rightNavItem
     }
@@ -181,7 +183,6 @@ final class HomeViewController: UIViewController {
     }
     
     private func updateVisibleCategories() {
-        // Перезагружаем данные коллекции (фильтрация будет при выдаче данных из провайдера)
         collectionView.reloadData()
     }
     
@@ -201,11 +202,10 @@ final class HomeViewController: UIViewController {
         default: filterSchedule = .monday
         }
         
-        trackerDataProvider.updateFilter(schedule: filterSchedule)
+        trackerDataProvider.updateFilter(schedule: filterSchedule, searchText: searchText)
     }
     
     private func updateStubViewVisibility() {
-        updateFilter()
         updateUI()
     }
     
@@ -227,8 +227,9 @@ final class HomeViewController: UIViewController {
         searchWorkItem?.cancel()
         
         let workItem = DispatchWorkItem { [weak self] in
-            self?.updateVisibleCategories()
-            self?.updateStubViewVisibility()
+            guard let self = self else { return }
+            self.updateFilter()
+            self.updateUI()
         }
         
         searchWorkItem = workItem

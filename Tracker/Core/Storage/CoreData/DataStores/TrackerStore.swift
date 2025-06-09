@@ -1,15 +1,19 @@
 import CoreData
 
 final class TrackerStore {
+    
+    // MARK: - Private Properties
+    
     private let coreDataStack: CoreDataStack
+    private var viewContext: NSManagedObjectContext {
+        coreDataStack.viewContext
+    }
+    
+    // MARK: - Initializers
 
     init(coreDataStack: CoreDataStack) {
         self.coreDataStack = coreDataStack
         print("TrackerStore initialized")
-    }
-
-    private var viewContext: NSManagedObjectContext {
-        coreDataStack.viewContext
     }
 
     // MARK: - Public Methods
@@ -88,8 +92,19 @@ final class TrackerStore {
         try save()
         print("Tracker '\(tracker.name)' deleted")
     }
+    
+    func deleteAll() throws {
+        let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
+        
+        if let trackerCDs = try? viewContext.fetch(request) {
+            trackerCDs.forEach { viewContext.delete($0) }
+        }
+        
+        try save()
+        print("All trackers deleted")
+    }
 
-    // MARK: - Private Helpers
+    // MARK: - Private Methods
 
     private func findOrCreateCategory(named title: String) throws -> TrackerCategoryCD {
         print("Searching category with title '\(title)'")
@@ -116,21 +131,5 @@ final class TrackerStore {
         } else {
             print("No changes to save")
         }
-    }
-}
-
-
-extension TrackerCD {
-    func toDomain() -> Tracker? {
-        guard let id = id,
-              let name = name,
-              let color = color,
-              let emoji = emoji else {
-            return nil
-        }
-
-        let schedule = Schedule(rawValue: Int(schedule))
-
-        return Tracker(id: id, name: name, color: color, emoji: emoji, schedule: schedule)
     }
 }

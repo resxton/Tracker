@@ -14,9 +14,6 @@ final class AppDIContainer {
     private lazy var trackerRecordStore: TrackerRecordStore = {
         TrackerRecordStore(coreDataStack: coreDataStack)
     }()
-    private lazy var trackerCategoryDataProvider: TrackerCategoryDataProvider = {
-        TrackerCategoryDataProvider(context: coreDataStack.viewContext)
-    }()
     private lazy var trackerDataProvider: TrackerDataProviderProtocol = {
         TrackerDataProvider(context: coreDataStack.viewContext)
     }()
@@ -33,7 +30,6 @@ final class AppDIContainer {
             trackerStore: trackerStore,
             trackerCategoryStore: trackerCategoryStore,
             trackerRecordStore: trackerRecordStore,
-            trackerCategoryDataProvider: trackerCategoryDataProvider,
             trackerDataProvider: trackerDataProvider
         )
         
@@ -75,6 +71,8 @@ final class AppDIContainer {
         return tabBarController
     }
 }
+
+// MARK: - Constants
 
 extension AppDIContainer {
     private enum Constants {

@@ -10,6 +10,16 @@ final class ColorCell: UICollectionViewCell {
         return view
     }()
     
+    // MARK: - Public Properties
+    
+    override var isSelected: Bool {
+        didSet {
+            layer.borderWidth = isSelected ? 3 : 0
+            layer.borderColor = colorView.backgroundColor?.withAlphaComponent(0.3).cgColor
+            layer.cornerRadius = 8
+        }
+    }
+    
     // MARK: - Initializers
     
     override init(frame: CGRect) {
@@ -19,16 +29,6 @@ final class ColorCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    // MARK: - Override Methods
-    
-    override var isSelected: Bool {
-        didSet {
-            layer.borderWidth = isSelected ? 3 : 0
-            layer.borderColor = colorView.backgroundColor?.withAlphaComponent(0.3).cgColor
-            layer.cornerRadius = 8
-        }
     }
     
     // MARK: - Public Methods

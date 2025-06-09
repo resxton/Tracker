@@ -1,11 +1,16 @@
 import CoreData
 
 final class CoreDataStack {
+    
+    // MARK: - Public Properties
+    
     let persistentContainer: NSPersistentContainer
     
     var viewContext: NSManagedObjectContext {
         persistentContainer.viewContext
     }
+    
+    // MARK: - Initalizers
     
     init(modelName: String = "TrackerDataModel") {
         persistentContainer = NSPersistentContainer(name: modelName)
@@ -17,6 +22,8 @@ final class CoreDataStack {
         persistentContainer.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
     }
+    
+    // MARK: - Public Methods
     
     func saveContext() {
         let context = viewContext
