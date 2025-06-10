@@ -5,7 +5,7 @@ final class HomeViewController: UIViewController {
     
     // MARK: - Visual Components
     
-    private let stubView: UIStackView = {
+    private lazy var stubView: UIStackView = {
         guard let image = UIImage(named: Constants.stubImage) else {
             fatalError("[HomeViewController] – Не существует картинки-заглушки")
         }

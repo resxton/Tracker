@@ -5,30 +5,32 @@ final class CreateTrackerViewController: UIViewController {
     
     // MARK: - Visual Components
     
-    private let scrollView: UIScrollView = {
+    private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
         return scrollView
     }()
     
-    private let contentView: UIView = {
+    private lazy var contentView: UIView = {
         let view = UIView()
         return view
     }()
     
-    private let buttonsStackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 0
-        stack.backgroundColor = .ypBackground
-        stack.isLayoutMarginsRelativeArrangement = true
-        stack.layoutMargins = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        stack.layer.cornerRadius = 16
-        stack.clipsToBounds = true
-        return stack
+    private lazy var buttonsTableView: UITableView = {
+        let tableView = UITableView()
+        tableView.backgroundColor = .clear
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.separatorColor = .ypGrey
+        tableView.isScrollEnabled = false
+        tableView.layer.cornerRadius = 16
+        tableView.clipsToBounds = true
+        tableView.isScrollEnabled = false
+        tableView.tableFooterView = UIView(frame: .zero)
+        tableView.separatorStyle = .singleLine
+        return tableView
     }()
     
-    private let nameTextField: UITextField = {
+    private lazy var nameTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Введите название трекера"
         textField.text = "Test"
@@ -42,34 +44,6 @@ final class CreateTrackerViewController: UIViewController {
         textField.smartQuotesType = .no
         textField.smartInsertDeleteType = .no
         return textField
-    }()
-    
-    private lazy var categoryButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Категория", for: .normal)
-        button.setTitleColor(.ypBlack, for: .normal)
-        button.backgroundColor = .clear
-        button.contentHorizontalAlignment = .left
-        button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
-        button.addTarget(self, action: #selector(categoryButtonTapped), for: .touchUpInside)
-        return button
-    }()
-    
-    private lazy var scheduleButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Расписание", for: .normal)
-        button.setTitleColor(.ypBlack, for: .normal)
-        button.backgroundColor = .clear
-        button.contentHorizontalAlignment = .left
-        button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
-        button.addTarget(self, action: #selector(scheduleButtonTapped), for: .touchUpInside)
-        return button
-    }()
-    
-    private let separatorView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .ypGrey
-        return view
     }()
     
     private lazy var emojiCollectionView: UICollectionView = {
@@ -137,7 +111,7 @@ final class CreateTrackerViewController: UIViewController {
         return button
     }()
     
-    private let buttonsStack: UIStackView = {
+    private lazy var buttonsStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.spacing = 8
@@ -196,6 +170,8 @@ final class CreateTrackerViewController: UIViewController {
         setupUI()
         setupTextFieldDelegate()
         setupNavigationBar()
+        buttonsTableView.delegate = self
+        buttonsTableView.dataSource = self
     }
     
     // MARK: - Private Methods
@@ -223,17 +199,9 @@ final class CreateTrackerViewController: UIViewController {
         scrollView.addSubview(contentView)
         
         contentView.addSubview(nameTextField)
-        contentView.addSubview(buttonsStackView)
+        contentView.addSubview(buttonsTableView)
         contentView.addSubview(emojiCollectionView)
         contentView.addSubview(colorCollectionView)
-        
-        if trackerType == .habit {
-            buttonsStackView.addArrangedSubview(categoryButton)
-            buttonsStackView.addArrangedSubview(separatorView)
-            buttonsStackView.addArrangedSubview(scheduleButton)
-        } else {
-            buttonsStackView.addArrangedSubview(categoryButton)
-        }
         
         buttonsStack.addArrangedSubview(cancelButton)
         buttonsStack.addArrangedSubview(createButton)
@@ -258,29 +226,14 @@ final class CreateTrackerViewController: UIViewController {
             make.height.equalTo(75)
         }
         
-        buttonsStackView.snp.makeConstraints { make in
+        buttonsTableView.snp.makeConstraints { make in
             make.top.equalTo(nameTextField.snp.bottom).offset(24)
             make.leading.trailing.equalToSuperview().inset(16)
-        }
-        
-        if trackerType == .habit {
-            separatorView.snp.makeConstraints { make in
-                make.height.equalTo(0.5)
-            }
-        }
-
-        categoryButton.snp.makeConstraints { make in
-            make.height.equalTo(75)
-        }
-        
-        if trackerType == .habit {
-            scheduleButton.snp.makeConstraints { make in
-                make.height.equalTo(75)
-            }
+            make.height.equalTo(trackerType == .habit ? 150 : 75)
         }
         
         emojiCollectionView.snp.makeConstraints { make in
-            make.top.equalTo(buttonsStackView.snp.bottom).offset(32)
+            make.top.equalTo(buttonsTableView.snp.bottom).offset(32)
             make.leading.trailing.equalToSuperview()
             make.height.equalTo(204)
         }
@@ -304,8 +257,8 @@ final class CreateTrackerViewController: UIViewController {
     }
     
     private func updateCreateButtonState() {
-        let isEnabled = !nameTextField.text!.isEmpty && 
-                       selectedEmoji != nil && 
+        let isEnabled = !nameTextField.text!.isEmpty &&
+                       selectedEmoji != nil &&
                        selectedColor != nil &&
                        (trackerType == .irregularEvent || !schedule.isEmpty)
         createButton.isEnabled = isEnabled
@@ -445,18 +398,13 @@ extension CreateTrackerViewController: UITextFieldDelegate {
 extension CreateTrackerViewController: ScheduleViewControllerDelegate {
     func scheduleViewController(_ viewController: ScheduleViewController, didSelect schedule: Schedule) {
         self.schedule = schedule
-        updateScheduleButtonTitle()
         updateCreateButtonState()
+        buttonsTableView.reloadData()
     }
     
-    private func updateScheduleButtonTitle() {
-        let daysString = formatSchedule(schedule)
-        scheduleButton.setTitle("Расписание: \(daysString)", for: .normal)
-    }
-    
-    private func formatSchedule(_ schedule: Schedule) -> String {
+    private func formatSchedule(_ schedule: Schedule) -> String? {
         if schedule.isEmpty {
-            return "Не выбрано"
+            return nil
         }
         
         if schedule == .everyDay {
@@ -487,4 +435,46 @@ extension CreateTrackerViewController: ScheduleViewControllerDelegate {
         
         return selectedDays
     }
-} 
+}
+
+// MARK: - UITableViewDataSource & UITableViewDelegate
+
+extension CreateTrackerViewController: UITableViewDataSource, UITableViewDelegate {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        trackerType == .habit ? 2 : 1
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "ButtonsTableViewCell")
+        
+        if indexPath.row == 0 {
+            cell.textLabel?.text = "Категория"
+            cell.detailTextLabel?.text = "Новая категория"
+            cell.accessoryType = .disclosureIndicator
+        } else if trackerType == .habit {
+            cell.textLabel?.text = "Расписание"
+            cell.detailTextLabel?.text = formatSchedule(schedule)
+            cell.accessoryType = .disclosureIndicator
+        }
+        
+        cell.textLabel?.textColor = .ypBlack
+        cell.detailTextLabel?.textColor = .ypGrey
+        cell.backgroundColor = .ypBackground
+        cell.clipsToBounds = true
+        cell.selectionStyle = .none
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 75
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.row == 0 {
+            categoryButtonTapped()
+        } else if trackerType == .habit {
+            scheduleButtonTapped()
+        }
+    }
+}

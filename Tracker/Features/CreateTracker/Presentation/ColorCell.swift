@@ -4,7 +4,7 @@ final class ColorCell: UICollectionViewCell {
     
     // MARK: - Visual Components
     
-    private let colorView: UIView = {
+    private lazy var colorView: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 8
         return view
