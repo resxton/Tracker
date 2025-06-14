@@ -74,6 +74,13 @@ final class AppDIContainer {
         
         return tabBarController
     }
+    
+    func makeCategoryViewController() -> UINavigationController {
+        let viewModel = CategoryViewModel(store: trackerCategoryStore)
+        let categoryVC = CategoryViewController(viewModel: viewModel)
+        let navController = UINavigationController(rootViewController: categoryVC)
+        return navController
+    }
 }
 
 // MARK: - Constants

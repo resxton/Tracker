@@ -4,7 +4,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     let container = AppDIContainer()
-    let alwaysShowOnboarding: Bool = true
+    let alwaysShowOnboarding: Bool = false
 
     func scene(
         _ scene: UIScene,
