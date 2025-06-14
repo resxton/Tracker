@@ -20,6 +20,10 @@ final class AppDIContainer {
     
     // MARK: - Public Methods
     
+    func makeOnboardingViewController() -> OnboardingViewController {
+        OnboardingViewController()
+    }
+    
     func makeHomeViewController() -> UINavigationController {
         guard let tabIcon = UIImage(named: Constants.homeViewTabIcon)?
             .withRenderingMode(.alwaysTemplate) else {
