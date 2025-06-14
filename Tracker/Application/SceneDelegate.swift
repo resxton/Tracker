@@ -4,6 +4,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     let container = AppDIContainer()
+    let alwaysShowOnboarding: Bool = false
 
     func scene(
         _ scene: UIScene,
@@ -13,7 +14,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
         
-        let rootViewController = container.makeMainTabBarController()
+        let hasSeenOnboarding = UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+        
+        let rootViewController = alwaysShowOnboarding ? OnboardingViewController() : (
+            hasSeenOnboarding ? container.makeMainTabBarController() : OnboardingViewController()
+        )
         
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
@@ -29,5 +34,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window?.rootViewController = rootViewController
         window?.makeKeyAndVisible()
+    }
+    
+    func switchToHome() {
+        guard let window = window else { return }
+        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+            let tabBarController = self.container.makeMainTabBarController()
+            window.rootViewController = tabBarController
+        }, completion: nil)
     }
 }

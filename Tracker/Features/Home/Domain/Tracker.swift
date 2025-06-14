@@ -6,6 +6,7 @@ struct Tracker: Codable {
     let color: String
     let emoji: String
     let schedule: Schedule
+    let categoryTitle: String?
 }
 
 struct Schedule: OptionSet, Codable {
