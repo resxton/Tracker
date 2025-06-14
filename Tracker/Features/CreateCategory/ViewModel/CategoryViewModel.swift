@@ -1,16 +1,38 @@
-import UIKit
+import Foundation
 
 class CategoryViewModel {
-    private var categories: [TrackerCategory] = []
-    private let store: TrackerCategoryStore
+    
+    // MARK: - Public Properties
+    
     var onCategoriesUpdated: (([TrackerCategory]) -> Void)?
     var onError: ((Error) -> Void)?
+    var onCategorySelected: ((TrackerCategory) -> Void)?
+    var categories: [TrackerCategory] = []
+
+    // MARK: - Private Properties
+    
+    private let store: TrackerCategoryStore
+    private var selectedCategory: TrackerCategory? {
+        didSet {
+            if let selected = selectedCategory {
+                onCategorySelected?(selected)
+            }
+        }
+    }
+
+    // MARK: - Initializers
     
     init(store: TrackerCategoryStore) {
         self.store = store
         loadCategories()
     }
+
+    // MARK: - Public Methods
     
+    func numberOfSections() -> Int {
+        categories.count
+    }
+
     func loadCategories() {
         do {
             categories = try store.fetchAll()
@@ -19,7 +41,7 @@ class CategoryViewModel {
             onError?(error)
         }
     }
-    
+
     func addCategory(_ title: String) {
         let newCategory = TrackerCategory(title: title, trackers: [])
         do {
@@ -29,7 +51,7 @@ class CategoryViewModel {
             onError?(error)
         }
     }
-    
+
     func deleteCategory(at index: Int) {
         guard index < categories.count else { return }
         let category = categories[index]
@@ -39,5 +61,15 @@ class CategoryViewModel {
         } catch {
             onError?(error)
         }
+    }
+
+    func selectCategory(at index: Int) {
+        guard index < categories.count else { return }
+        selectedCategory = categories[index]
+    }
+
+    func isCategorySelected(at index: Int) -> Bool {
+        guard index < categories.count else { return false }
+        return categories[index].title == selectedCategory?.title
     }
 }

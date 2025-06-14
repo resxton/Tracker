@@ -2,8 +2,9 @@ import UIKit
 import SnapKit
 
 final class NewCategoryViewController: UIViewController {
-    var onCategoryCreated: ((String) -> Void)?
-
+    
+    // MARK: - Visual Components
+    
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Новая категория"
@@ -33,6 +34,10 @@ final class NewCategoryViewController: UIViewController {
         button.isEnabled = false
         return button
     }()
+    
+    // MARK: - Public Properties
+    
+    var onCategoryCreated: ((String) -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -59,6 +64,8 @@ final class NewCategoryViewController: UIViewController {
             make.height.equalTo(60)
         }
     }
+    
+    // MARK: - Private Methods
 
     @objc private func textFieldDidChange() {
         let isNotEmpty = !(nameTextField.text?.isEmpty ?? true)

@@ -1,9 +1,10 @@
 import UIKit
 import SnapKit
-import CoreData
 
 final class CreateTrackerViewController: UIViewController {
+    
     // MARK: - Visual Components
+    
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
@@ -110,7 +111,7 @@ final class CreateTrackerViewController: UIViewController {
     }()
 
     // MARK: - Private Properties
-    weak var delegate: CreateTrackerViewControllerDelegate?
+    
     private let trackerType: TrackerType
     private var schedule: Schedule = []
     private var selectedEmoji: String?
@@ -142,6 +143,7 @@ final class CreateTrackerViewController: UIViewController {
     ]
 
     // MARK: - Initializers
+    
     init(type: TrackerType, trackerStore: TrackerStore) {
         self.trackerType = type
         self.trackerStore = trackerStore
@@ -153,6 +155,7 @@ final class CreateTrackerViewController: UIViewController {
     }
 
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -163,6 +166,7 @@ final class CreateTrackerViewController: UIViewController {
     }
 
     // MARK: - Private Methods
+    
     private func setupNavigationBar() {
         navigationItem.title = trackerType.createTitle
         navigationItem.hidesBackButton = true
@@ -287,13 +291,9 @@ final class CreateTrackerViewController: UIViewController {
 
         do {
             let trackerId = UUID()
-            let scheduleValue = trackerType == .habit ? Int64(schedule.rawValue) : Int64(Schedule.everyDay.rawValue)
             let tracker = Tracker(id: trackerId, name: name, color: color.name, emoji: emoji, schedule: schedule, categoryTitle: category.title)
             try trackerStore.addTracker(tracker, to: category.title)
-            if let createdTracker = try trackerStore.fetch(by: trackerId) {
-                delegate?.createTrackerViewController(self, didCreate: createdTracker)
-                dismiss(animated: true)
-            }
+            dismiss(animated: true)
         } catch {
             print("Error creating tracker: \(error.localizedDescription)")
         }
@@ -301,6 +301,7 @@ final class CreateTrackerViewController: UIViewController {
 }
 
 // MARK: - UICollectionViewDelegate & UICollectionViewDataSource
+
 extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionViewDataSource {
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
@@ -347,6 +348,7 @@ extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionVie
 }
 
 // MARK: - UICollectionViewDelegateFlowLayout
+
 extension CreateTrackerViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
         return CGSize(width: collectionView.bounds.width, height: 18)
@@ -358,6 +360,7 @@ extension CreateTrackerViewController: UICollectionViewDelegateFlowLayout {
 }
 
 // MARK: - UITextFieldDelegate
+
 extension CreateTrackerViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
@@ -370,6 +373,7 @@ extension CreateTrackerViewController: UITextFieldDelegate {
 }
 
 // MARK: - ScheduleViewControllerDelegate
+
 extension CreateTrackerViewController: ScheduleViewControllerDelegate {
     func scheduleViewController(_ viewController: ScheduleViewController, didSelect schedule: Schedule) {
         self.schedule = schedule
@@ -408,6 +412,7 @@ extension CreateTrackerViewController: ScheduleViewControllerDelegate {
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
+
 extension CreateTrackerViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         trackerType == .habit ? 2 : 1
@@ -418,7 +423,7 @@ extension CreateTrackerViewController: UITableViewDataSource, UITableViewDelegat
 
         if indexPath.row == 0 {
             cell.textLabel?.text = "Категория"
-            cell.detailTextLabel?.text = selectedCategory?.title ?? "Новая категория"
+            cell.detailTextLabel?.text = selectedCategory?.title
             cell.accessoryType = .disclosureIndicator
         } else if trackerType == .habit {
             cell.textLabel?.text = "Расписание"

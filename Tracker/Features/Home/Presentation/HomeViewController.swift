@@ -340,23 +340,7 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
 extension HomeViewController: TrackerTypeViewControllerDelegate {
     func trackerTypeViewController(_ viewController: TrackerTypeViewController, didSelect type: TrackerType) {
         let createViewController = CreateTrackerViewController(type: type, trackerStore: trackerStore)
-        createViewController.delegate = self
         viewController.navigationController?.pushViewController(createViewController, animated: true)
-    }
-}
-
-// MARK: - CreateTrackerViewControllerDelegate
-
-extension HomeViewController: CreateTrackerViewControllerDelegate {
-    func createTrackerViewController(
-        _ viewController: CreateTrackerViewController,
-        didCreate tracker: Tracker
-    ) {
-//        do {
-//            try trackerStore.addTracker(tracker, to: "Новая категория")
-//        } catch {
-//            assertionFailure("Failed to add tracker: \(error)")
-//        }
     }
 }
 
