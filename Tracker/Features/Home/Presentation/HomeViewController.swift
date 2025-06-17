@@ -62,6 +62,17 @@ final class HomeViewController: UIViewController {
         return collectionView
     }()
     
+    private lazy var filterButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("Фильтры", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
+        button.backgroundColor = .ypBlue
+        button.layer.cornerRadius = 16
+        button.addTarget(self, action: #selector(filterButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
     // MARK: - Private Properties
     
     private let trackerStore: TrackerStore
@@ -72,6 +83,7 @@ final class HomeViewController: UIViewController {
     private var currentDate = Date().startOfDay()
     private var searchText: String = ""
     private var searchWorkItem: DispatchWorkItem?
+    private var selectedFilter: TrackerFilter = .all
     
     // MARK: - Initializers
     
@@ -163,10 +175,19 @@ final class HomeViewController: UIViewController {
         updateStubViewVisibility()
     }
     
+    @objc private func filterButtonTapped() {
+        let filterViewController = FilterViewController(selectedFilter: selectedFilter)
+        filterViewController.delegate = self
+        let navigationController = UINavigationController(rootViewController: filterViewController)
+        navigationController.modalPresentationStyle = .pageSheet
+        present(navigationController, animated: true)
+    }
+    
     private func setupUI() {
         view.backgroundColor = .ypWhite
         view.addSubview(stubView)
         view.addSubview(collectionView)
+        view.addSubview(filterButton)
         stubView.isHidden = true
     }
     
@@ -179,6 +200,13 @@ final class HomeViewController: UIViewController {
         collectionView.snp.makeConstraints { make in
             make.leading.trailing.bottom.equalTo(view.layoutMarginsGuide)
             make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(Constants.Layout.collectionTopInset)
+        }
+        
+        filterButton.snp.makeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-24)
+            make.width.equalTo(114)
+            make.height.equalTo(50)
         }
     }
     
@@ -202,7 +230,8 @@ final class HomeViewController: UIViewController {
         default: filterSchedule = .monday
         }
         
-        trackerDataProvider.updateFilter(schedule: filterSchedule, searchText: searchText)
+        let effectiveSchedule = selectedFilter == .today ? filterSchedule : nil
+        trackerDataProvider.updateFilter(schedule: effectiveSchedule, searchText: searchText, filter: selectedFilter, date: currentDate)
     }
     
     private func updateStubViewVisibility() {
@@ -462,6 +491,8 @@ extension HomeViewController: TrackerCellDelegate {
     }
 }
 
+// MARK: - TrackerDataProviderDelegate
+
 extension HomeViewController: TrackerDataProviderDelegate {
     func didChangeContent() {
         collectionView.reloadData()
@@ -476,6 +507,16 @@ extension HomeViewController: UISearchResultsUpdating {
         guard let text = searchController.searchBar.text else { return }
         searchText = text
         performSearch()
+    }
+}
+
+// MARK: - FilterViewControllerDelegate
+
+extension HomeViewController: FilterViewControllerDelegate {
+    func didSelectFilter(_ filter: TrackerFilter) {
+        selectedFilter = filter
+        updateFilter()
+        updateUI()
     }
 }
 

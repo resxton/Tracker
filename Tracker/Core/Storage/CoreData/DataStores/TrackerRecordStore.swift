@@ -82,6 +82,14 @@ final class TrackerRecordStore {
         try save()
     }
     
+    func getTrackerIDsWithRecords(on date: Date) throws -> [UUID] {
+        let normalizedDate = date.startOfDay()
+        let request: NSFetchRequest<TrackerRecordCD> = TrackerRecordCD.fetchRequest()
+        request.predicate = NSPredicate(format: "date == %@", normalizedDate as NSDate)
+        let records = try viewContext.fetch(request)
+        return records.compactMap { $0.tracker?.id }
+    }
+    
     // MARK: - Private Methods
 
     private func save() throws {

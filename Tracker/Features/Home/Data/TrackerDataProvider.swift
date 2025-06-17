@@ -1,5 +1,12 @@
 import CoreData
 
+enum TrackerFilter: String, CaseIterable {
+    case all = "Все трекеры"
+    case today = "Трекеры на сегодня"
+    case completed = "Завершенные"
+    case notCompleted = "Незавершенные"
+}
+
 final class TrackerDataProvider: NSObject {
     
     // MARK: - Public Properties
@@ -13,15 +20,17 @@ final class TrackerDataProvider: NSObject {
     private let viewContext: NSManagedObjectContext
     private var filterScheduleMask: Int64? = nil
     private var pinnedTrackers: [TrackerCD] = []
+    private let trackerRecordStore: TrackerRecordStore
 
     // MARK: - Initializers
     
-    init(context: NSManagedObjectContext) {
+    init(context: NSManagedObjectContext, trackerRecordStore: TrackerRecordStore) {
         self.viewContext = context
+        self.trackerRecordStore = trackerRecordStore
 
         // Основной запрос для незакрепленных трекеров
         let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
-        request.predicate = NSPredicate(format: "isPinned == false") // Исключаем закрепленные трекеры
+        request.predicate = NSPredicate(format: "isPinned == false")
         request.sortDescriptors = [
             NSSortDescriptor(key: "category.title", ascending: true),
             NSSortDescriptor(key: "name", ascending: true)
@@ -71,7 +80,7 @@ final class TrackerDataProvider: NSObject {
 extension TrackerDataProvider: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("NSFetchedResultsController content did change")
-        fetchPinnedTrackers() // Обновляем закрепленные трекеры при изменении данных
+        fetchPinnedTrackers()
         delegate?.didChangeContent()
     }
 }
@@ -126,8 +135,8 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
         return finalTitle
     }
     
-    func updateFilter(schedule: Schedule?, searchText: String?) {
-        var predicates: [NSPredicate] = []
+    func updateFilter(schedule: Schedule?, searchText: String?, filter: TrackerFilter?, date: Date) {
+        var predicates: [NSPredicate] = [NSPredicate(format: "isPinned == false")]
         var pinnedPredicates: [NSPredicate] = [NSPredicate(format: "isPinned == true")]
         
         if let schedule = schedule, !schedule.isEmpty {
@@ -143,20 +152,34 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
             pinnedPredicates.append(NSPredicate(format: "name CONTAINS[cd] %@", searchText))
         }
         
-        // Основной запрос (незакрепленные трекеры)
-        if predicates.isEmpty {
-            fetchedResultsController.fetchRequest.predicate = NSPredicate(format: "isPinned == false")
-        } else {
-            predicates.append(NSPredicate(format: "isPinned == false"))
-            fetchedResultsController.fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        if let filter = filter {
+            switch filter {
+            case .all:
+                break // Нет дополнительных предикатов
+            case .today:
+                if let schedule = schedule, !schedule.isEmpty {
+                    // Уже добавлен предикат для расписания
+                }
+            case .completed:
+                let completedIDs = try? trackerRecordStore.getTrackerIDsWithRecords(on: date)
+                if let ids = completedIDs, !ids.isEmpty {
+                    predicates.append(NSPredicate(format: "id IN %@", ids))
+                    pinnedPredicates.append(NSPredicate(format: "id IN %@", ids))
+                } else {
+                    predicates.append(NSPredicate(format: "FALSEPREDICATE"))
+                    pinnedPredicates.append(NSPredicate(format: "FALSEPREDICATE"))
+                }
+            case .notCompleted:
+                let completedIDs = try? trackerRecordStore.getTrackerIDsWithRecords(on: date)
+                if let ids = completedIDs, !ids.isEmpty {
+                    predicates.append(NSPredicate(format: "NOT id IN %@", ids))
+                    pinnedPredicates.append(NSPredicate(format: "NOT id IN %@", ids))
+                }
+            }
         }
-
-        // Запрос для закрепленных трекеров
-        if pinnedPredicates.count == 1 {
-            pinnedFetchRequest.predicate = NSPredicate(format: "isPinned == true")
-        } else {
-            pinnedFetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: pinnedPredicates)
-        }
+        
+        fetchedResultsController.fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        pinnedFetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: pinnedPredicates)
 
         do {
             try fetchedResultsController.performFetch()

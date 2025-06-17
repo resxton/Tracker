@@ -15,7 +15,7 @@ final class AppDIContainer {
         TrackerRecordStore(coreDataStack: coreDataStack)
     }()
     private lazy var trackerDataProvider: TrackerDataProviderProtocol = {
-        TrackerDataProvider(context: coreDataStack.viewContext)
+        TrackerDataProvider(context: coreDataStack.viewContext, trackerRecordStore: trackerRecordStore)
     }()
     
     // MARK: - Public Methods
