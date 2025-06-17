@@ -1,12 +1,5 @@
 import CoreData
 
-enum TrackerFilter: String, CaseIterable {
-    case all = "Все трекеры"
-    case today = "Трекеры на сегодня"
-    case completed = "Завершенные"
-    case notCompleted = "Незавершенные"
-}
-
 final class TrackerDataProvider: NSObject {
     
     // MARK: - Public Properties
@@ -28,7 +21,6 @@ final class TrackerDataProvider: NSObject {
         self.viewContext = context
         self.trackerRecordStore = trackerRecordStore
 
-        // Основной запрос для незакрепленных трекеров
         let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
         request.predicate = NSPredicate(format: "isPinned == false")
         request.sortDescriptors = [
@@ -43,7 +35,6 @@ final class TrackerDataProvider: NSObject {
             cacheName: nil
         )
 
-        // Запрос для закрепленных трекеров
         self.pinnedFetchRequest = TrackerCD.fetchRequest()
         pinnedFetchRequest.predicate = NSPredicate(format: "isPinned == true")
         pinnedFetchRequest.sortDescriptors = [
@@ -56,7 +47,6 @@ final class TrackerDataProvider: NSObject {
         fetchPinnedTrackers()
         do {
             try fetchedResultsController.performFetch()
-            print("FetchedResultsController fetch performed successfully")
         } catch {
             print("Failed to perform fetch: \(error)")
         }
@@ -67,7 +57,6 @@ final class TrackerDataProvider: NSObject {
     private func fetchPinnedTrackers() {
         do {
             pinnedTrackers = try viewContext.fetch(pinnedFetchRequest)
-            print("Fetched \(pinnedTrackers.count) pinned trackers")
         } catch {
             print("Failed to fetch pinned trackers: \(error)")
             pinnedTrackers = []
@@ -79,7 +68,6 @@ final class TrackerDataProvider: NSObject {
 
 extension TrackerDataProvider: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        print("NSFetchedResultsController content did change")
         fetchPinnedTrackers()
         delegate?.didChangeContent()
     }
@@ -91,62 +79,46 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
     var numberOfSections: Int {
         let baseSections = fetchedResultsController.sections?.count ?? 0
         let hasPinned = !pinnedTrackers.isEmpty
-        let totalSections = baseSections + (hasPinned ? 1 : 0)
-        print("Number of sections requested: \(totalSections)")
-        return totalSections
+        return baseSections + (hasPinned ? 1 : 0)
     }
 
     func numberOfItems(in section: Int) -> Int {
         if section == 0 && !pinnedTrackers.isEmpty {
-            let count = pinnedTrackers.count
-            print("Number of items in pinned section: \(count)")
-            return count
+            return pinnedTrackers.count
         }
         let adjustedSection = !pinnedTrackers.isEmpty ? section - 1 : section
-        let count = fetchedResultsController.sections?[adjustedSection].numberOfObjects ?? 0
-        print("Number of items in section \(section): \(count)")
-        return count
+        return fetchedResultsController.sections?[adjustedSection].numberOfObjects ?? 0
     }
 
     func tracker(at indexPath: IndexPath) -> Tracker? {
         if indexPath.section == 0 && !pinnedTrackers.isEmpty {
             let cdTracker = pinnedTrackers[indexPath.row]
-            let domainTracker = cdTracker.toDomain()
-            print("Pinned tracker requested at \(indexPath): \(domainTracker?.name ?? "nil")")
-            return domainTracker
+            return cdTracker.toDomain()
         }
         let adjustedSection = !pinnedTrackers.isEmpty ? indexPath.section - 1 : indexPath.section
         let adjustedIndexPath = IndexPath(row: indexPath.row, section: adjustedSection)
         let cdTracker = fetchedResultsController.object(at: adjustedIndexPath)
-        let domainTracker = cdTracker.toDomain()
-        print("Tracker requested at \(indexPath): \(domainTracker?.name ?? "nil")")
-        return domainTracker
+        return cdTracker.toDomain()
     }
 
     func titleForSection(_ section: Int) -> String? {
         if section == 0 && !pinnedTrackers.isEmpty {
-            print("Title for pinned section: \(Constants.pinnedCategoryTitle)")
             return Constants.pinnedCategoryTitle
         }
         let adjustedSection = !pinnedTrackers.isEmpty ? section - 1 : section
         let title = fetchedResultsController.sections?[adjustedSection].name
-        let finalTitle = title == "" ? Constants.defaultCategoryTitle : title
-        print("Title for section \(section): \(finalTitle ?? "nil")")
-        return finalTitle
+        return title == "" ? Constants.defaultCategoryTitle : title
     }
     
     func updateFilter(schedule: Schedule?, searchText: String?, filter: TrackerFilter?, date: Date) {
         var predicates: [NSPredicate] = [NSPredicate(format: "isPinned == false")]
         var pinnedPredicates: [NSPredicate] = [NSPredicate(format: "isPinned == true")]
         
-        if let schedule = schedule, !schedule.isEmpty {
+        if let schedule = schedule, !schedule.isEmpty, (filter == .today || filter == .all) {
             filterScheduleMask = Int64(schedule.rawValue)
             predicates.append(NSPredicate(format: "schedule & %d != 0", filterScheduleMask!))
             pinnedPredicates.append(NSPredicate(format: "schedule & %d != 0", filterScheduleMask!))
-        } else {
-            filterScheduleMask = nil
         }
-        
         if let searchText = searchText, !searchText.isEmpty {
             predicates.append(NSPredicate(format: "name CONTAINS[cd] %@", searchText))
             pinnedPredicates.append(NSPredicate(format: "name CONTAINS[cd] %@", searchText))
@@ -154,12 +126,8 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
         
         if let filter = filter {
             switch filter {
-            case .all:
-                break // Нет дополнительных предикатов
-            case .today:
-                if let schedule = schedule, !schedule.isEmpty {
-                    // Уже добавлен предикат для расписания
-                }
+            case .all, .today:
+                break // Предикаты для .today уже добавлены выше
             case .completed:
                 let completedIDs = try? trackerRecordStore.getTrackerIDsWithRecords(on: date)
                 if let ids = completedIDs, !ids.isEmpty {

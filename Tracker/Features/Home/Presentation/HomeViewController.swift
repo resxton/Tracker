@@ -30,6 +30,31 @@ final class HomeViewController: UIViewController {
         return stack
     }()
     
+    private lazy var noResultsStubView: UIStackView = {
+        guard let image = UIImage(named: Constants.noResultsStubImage) else {
+            fatalError("[HomeViewController] – Не существует картинки-заглушки для результатов")
+        }
+
+        let stubLabel = UILabel()
+        stubLabel.text = Constants.noResultsStubMessage
+        stubLabel.textAlignment = .center
+        stubLabel.font = .systemFont(ofSize: Constants.stubTitleFontSize)
+        
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFit
+        
+        let stack = UIStackView(arrangedSubviews: [imageView, stubLabel])
+        stack.axis = .vertical
+        stack.spacing = Constants.Layout.stubSpacing
+        stack.alignment = .center
+        
+        imageView.snp.makeConstraints { make in
+            make.width.height.equalTo(Constants.Layout.stubImageWidth)
+        }
+        
+        return stack
+    }()
+    
     private lazy var searchController: UISearchController = {
         let controller = UISearchController(searchResultsController: nil)
         controller.searchResultsUpdater = self
@@ -59,6 +84,8 @@ final class HomeViewController: UIViewController {
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
             withReuseIdentifier: Constants.headerIdentifier
         )
+        // Добавляем contentInset для оверскролла
+        collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: Constants.Layout.filterButtonHeight + Constants.Layout.filterButtonBottomInset + 16, right: 0)
         return collectionView
     }()
     
@@ -79,11 +106,11 @@ final class HomeViewController: UIViewController {
     private let trackerCategoryStore: TrackerCategoryStore
     private let trackerRecordStore: TrackerRecordStore
     private let trackerDataProvider: TrackerDataProviderProtocol
-
     private var currentDate = Date().startOfDay()
     private var searchText: String = ""
     private var searchWorkItem: DispatchWorkItem?
     private var selectedFilter: TrackerFilter = .all
+    private var datePicker: UIDatePicker?
     
     // MARK: - Initializers
     
@@ -150,14 +177,14 @@ final class HomeViewController: UIViewController {
         datePicker.preferredDatePickerStyle = .compact
         datePicker.tintColor = .ypBlue
         datePicker.clipsToBounds = true
-        datePicker.addTarget(self, action: #selector(datePickerValueChanged(_:)), for: .valueChanged)
+        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
         datePicker.date = currentDate
+        self.datePicker = datePicker
         
         datePicker.snp.makeConstraints { make in
             make.width.equalTo(Constants.Layout.datePickerWidth)
         }
         
-        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
         let rightNavItem = UIBarButtonItem(customView: datePicker)
         navigationItem.rightBarButtonItem = rightNavItem
     }
@@ -169,26 +196,22 @@ final class HomeViewController: UIViewController {
         present(navigationController, animated: true)
     }
     
-    @objc private func datePickerValueChanged(_ sender: UIDatePicker) {
-        currentDate = sender.date
-        updateVisibleCategories()
-        updateStubViewVisibility()
-    }
-    
     @objc private func filterButtonTapped() {
         let filterViewController = FilterViewController(selectedFilter: selectedFilter)
         filterViewController.delegate = self
-        let navigationController = UINavigationController(rootViewController: filterViewController)
-        navigationController.modalPresentationStyle = .pageSheet
+        let navigationController = UINavigationController(rootViewController: filterViewController)        
         present(navigationController, animated: true)
     }
     
     private func setupUI() {
         view.backgroundColor = .ypWhite
         view.addSubview(stubView)
+        view.addSubview(noResultsStubView)
         view.addSubview(collectionView)
         view.addSubview(filterButton)
         stubView.isHidden = true
+        noResultsStubView.isHidden = true
+        filterButton.isHidden = true
     }
     
     private func setupConstraints() {
@@ -197,16 +220,22 @@ final class HomeViewController: UIViewController {
             make.centerY.equalTo(view.layoutMarginsGuide.snp.centerY)
         }
         
+        noResultsStubView.snp.makeConstraints { make in
+            make.horizontalEdges.equalTo(view.layoutMarginsGuide)
+            make.centerY.equalTo(view.layoutMarginsGuide.snp.centerY)
+        }
+        
         collectionView.snp.makeConstraints { make in
-            make.leading.trailing.bottom.equalTo(view.layoutMarginsGuide)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(Constants.Layout.collectionTopInset)
+            make.leading.trailing.equalTo(view.layoutMarginsGuide)
+            make.top.equalTo(view.safeAreaLayoutGuide).offset(Constants.Layout.collectionTopInset)
+            make.bottom.equalTo(view.safeAreaLayoutGuide)
         }
         
         filterButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-24)
-            make.width.equalTo(114)
-            make.height.equalTo(50)
+            make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-Constants.Layout.filterButtonBottomInset)
+            make.width.equalTo(Constants.Layout.filterButtonWidth)
+            make.height.equalTo(Constants.Layout.filterButtonHeight)
         }
     }
     
@@ -230,16 +259,28 @@ final class HomeViewController: UIViewController {
         default: filterSchedule = .monday
         }
         
-        let effectiveSchedule = selectedFilter == .today ? filterSchedule : nil
+        if selectedFilter == .today {
+            currentDate = Date().startOfDay()
+            datePicker?.date = currentDate
+        }
+        
+        let effectiveSchedule: Schedule? = (selectedFilter == .today || selectedFilter == .all) ? filterSchedule : nil
         trackerDataProvider.updateFilter(schedule: effectiveSchedule, searchText: searchText, filter: selectedFilter, date: currentDate)
-    }
-    
-    private func updateStubViewVisibility() {
-        updateUI()
     }
     
     private func updateUI() {
         var hasTrackersForSelectedDate = false
+        var hasTrackersInStore = false
+        
+        // Проверяем, есть ли трекеры в базе
+        do {
+            let trackersCount = try trackerStore.fetchTrackersCount()
+            hasTrackersInStore = trackersCount > 0
+        } catch {
+            print("Ошибка при проверке трекеров в базе: \(error)")
+        }
+        
+        // Проверяем, есть ли трекеры для отображения после фильтрации
         for section in 0..<trackerDataProvider.numberOfSections {
             if trackerDataProvider.numberOfItems(in: section) > 0 {
                 hasTrackersForSelectedDate = true
@@ -247,8 +288,24 @@ final class HomeViewController: UIViewController {
             }
         }
         
-        stubView.isHidden = hasTrackersForSelectedDate
-        collectionView.isHidden = !hasTrackersForSelectedDate
+        if !hasTrackersInStore {
+            stubView.isHidden = false
+            noResultsStubView.isHidden = true
+            collectionView.isHidden = true
+            filterButton.isHidden = true
+        } else if !hasTrackersForSelectedDate {
+            stubView.isHidden = true
+            noResultsStubView.isHidden = false
+            collectionView.isHidden = true
+            if selectedFilter == .all {
+                filterButton.isHidden = true
+            }
+        } else {
+            stubView.isHidden = true
+            noResultsStubView.isHidden = true
+            collectionView.isHidden = false
+            filterButton.isHidden = false
+        }
     }
 
     private func performSearch() {
@@ -485,6 +542,8 @@ extension HomeViewController: TrackerCellDelegate {
                 color: tracker.color,
                 completed: !isCompletedToday
             )
+            updateFilter()
+            updateUI()
         } catch {
             print("Ошибка работы с TrackerRecordStore: \(error)")
         }
@@ -528,6 +587,8 @@ extension HomeViewController {
         static let addButtonIcon = "PlusIcon"
         static let stubImage = "HomeViewStubImage"
         static let stubMessage = "Что будем отслеживать?"
+        static let noResultsStubImage = "HomeViewNoResultsStubImage"
+        static let noResultsStubMessage = "Ничего не найдено"
         static let stubTitleFontSize: CGFloat = 12
         static let searchPlaceholder = "Поиск"
         static let cellIdentifier = "TrackerCell"
@@ -545,6 +606,9 @@ extension HomeViewController {
             static let collectionTopInset: CGFloat = 8
             static let cellHeight: CGFloat = 148
             static let searchDebounceDelay: Double = 0.3
+            static let filterButtonWidth: CGFloat = 114
+            static let filterButtonHeight: CGFloat = 50
+            static let filterButtonBottomInset: CGFloat = 24
         }
     }
 }

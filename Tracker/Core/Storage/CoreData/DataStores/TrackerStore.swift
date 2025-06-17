@@ -142,6 +142,11 @@ final class TrackerStore {
         try save()
         print("Tracker '\(tracker.name)' unpinned")
     }
+    
+    func fetchTrackersCount() throws -> Int {
+        let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
+        return try viewContext.count(for: request)
+    }
 
     // MARK: - Private Methods
 
