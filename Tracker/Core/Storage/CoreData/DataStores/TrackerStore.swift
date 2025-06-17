@@ -34,6 +34,7 @@ final class TrackerStore {
         trackerCD.emoji = tracker.emoji
         trackerCD.schedule = Int64(tracker.schedule.rawValue)
         trackerCD.category = category
+        trackerCD.isPinned = tracker.isPinned
 
         try save()
         print("Tracker '\(tracker.name)' saved")
@@ -76,6 +77,10 @@ final class TrackerStore {
         trackerCD.color = tracker.color
         trackerCD.emoji = tracker.emoji
         trackerCD.schedule = Int64(tracker.schedule.rawValue)
+        trackerCD.isPinned = tracker.isPinned
+        if let categoryTitle = tracker.categoryTitle {
+            trackerCD.category = try findOrCreateCategory(named: categoryTitle)
+        }
 
         try save()
         print("Tracker '\(tracker.name)' updated")
@@ -102,6 +107,40 @@ final class TrackerStore {
         
         try save()
         print("All trackers deleted")
+    }
+
+    func pinTracker(_ tracker: Tracker) throws {
+        print("Pinning tracker '\(tracker.name)'")
+        let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let trackerCD = try viewContext.fetch(request).first else {
+            print("Tracker to pin not found")
+            throw NSError(domain: "TrackerStore", code: 404, userInfo: [NSLocalizedDescriptionKey: "Tracker not found"])
+        }
+
+        trackerCD.isPinned = true
+
+        try save()
+        print("Tracker '\(tracker.name)' pinned")
+    }
+
+    func unpinTracker(_ tracker: Tracker) throws {
+        print("Unpinning tracker '\(tracker.name)'")
+        let request: NSFetchRequest<TrackerCD> = TrackerCD.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", tracker.id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let trackerCD = try viewContext.fetch(request).first else {
+            print("Tracker to unpin not found")
+            throw NSError(domain: "TrackerStore", code: 404, userInfo: [NSLocalizedDescriptionKey: "Tracker not found"])
+        }
+
+        trackerCD.isPinned = false
+
+        try save()
+        print("Tracker '\(tracker.name)' unpinned")
     }
 
     // MARK: - Private Methods

@@ -7,6 +7,7 @@ struct Tracker: Codable {
     let emoji: String
     let schedule: Schedule
     let categoryTitle: String?
+    let isPinned: Bool
 }
 
 struct Schedule: OptionSet, Codable {

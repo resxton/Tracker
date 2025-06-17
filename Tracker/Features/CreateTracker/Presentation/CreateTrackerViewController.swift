@@ -45,6 +45,15 @@ final class CreateTrackerViewController: UIViewController {
         return textField
     }()
 
+    private lazy var daysLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 32, weight: .bold)
+        label.textColor = .ypBlack
+        label.textAlignment = .center
+        label.isHidden = true
+        return label
+    }()
+
     private lazy var emojiCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.itemSize = CGSize(width: 52, height: 52)
@@ -113,11 +122,14 @@ final class CreateTrackerViewController: UIViewController {
     // MARK: - Private Properties
     
     private let trackerType: TrackerType
+    private let isEditingMode: Bool
+    private let editingTracker: Tracker?
     private var schedule: Schedule = []
     private var selectedEmoji: String?
     private var selectedColor: NamedColor?
     private var selectedCategory: TrackerCategory?
     private let trackerStore: TrackerStore
+    private let trackerRecordStore: TrackerRecordStore
 
     private let emojis = ["🙂", "😻", "🌺", "🐶", "❤️", "😱", "😇", "😡", "🥶", "🤔", "🙌", "🍔", "🥦", "🏓", "🥇", "🎸", "🏝", "😪"]
 
@@ -144,9 +156,12 @@ final class CreateTrackerViewController: UIViewController {
 
     // MARK: - Initializers
     
-    init(type: TrackerType, trackerStore: TrackerStore) {
+    init(type: TrackerType, trackerStore: TrackerStore, trackerRecordStore: TrackerRecordStore, editingTracker: Tracker? = nil) {
         self.trackerType = type
         self.trackerStore = trackerStore
+        self.trackerRecordStore = trackerRecordStore
+        self.editingTracker = editingTracker
+        self.isEditingMode = editingTracker != nil
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -163,12 +178,15 @@ final class CreateTrackerViewController: UIViewController {
         setupNavigationBar()
         buttonsTableView.delegate = self
         buttonsTableView.dataSource = self
+        if isEditingMode {
+            configureForEditing()
+        }
     }
 
     // MARK: - Private Methods
     
     private func setupNavigationBar() {
-        navigationItem.title = trackerType.createTitle
+        navigationItem.title = isEditingMode ? "Редактировать трекер" : trackerType.createTitle
         navigationItem.hidesBackButton = true
 
         if let navigationBar = navigationController?.navigationBar {
@@ -187,6 +205,7 @@ final class CreateTrackerViewController: UIViewController {
 
         scrollView.addSubview(contentView)
 
+        contentView.addSubview(daysLabel)
         contentView.addSubview(nameTextField)
         contentView.addSubview(buttonsTableView)
         contentView.addSubview(emojiCollectionView)
@@ -209,8 +228,18 @@ final class CreateTrackerViewController: UIViewController {
             make.width.equalTo(scrollView)
         }
 
-        nameTextField.snp.makeConstraints { make in
+        daysLabel.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(24)
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.height.equalTo(38)
+        }
+        
+        nameTextField.snp.makeConstraints { make in
+            if isEditingMode {
+                make.top.equalTo(daysLabel.snp.bottom).offset(24)
+            } else {
+                make.top.equalToSuperview().offset(24)
+            }
             make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(75)
         }
@@ -243,6 +272,53 @@ final class CreateTrackerViewController: UIViewController {
 
     private func setupTextFieldDelegate() {
         nameTextField.delegate = self
+    }
+
+    private func configureForEditing() {
+        guard let tracker = editingTracker else { return }
+
+        // Настройка кнопки "Сохранить"
+        createButton.setTitle("Сохранить", for: .normal)
+
+        // Заполнение полей
+        nameTextField.text = tracker.name
+        selectedEmoji = tracker.emoji
+        selectedColor = colors.first { $0.name == tracker.color }
+        schedule = tracker.schedule
+        if let categoryTitle = tracker.categoryTitle {
+            selectedCategory = TrackerCategory(title: categoryTitle, trackers: [])
+        }
+
+        // Отображение количества дней
+        do {
+            let completedDays = try trackerRecordStore.countRecords(for: tracker.id)
+            daysLabel.text = "\(completedDays) \(formatDays(completedDays))"
+            daysLabel.isHidden = false
+        } catch {
+            print("Ошибка при получении количества дней: \(error)")
+            daysLabel.isHidden = true
+        }
+
+        // Обновление UI
+        updateCreateButtonState()
+        emojiCollectionView.reloadData()
+        colorCollectionView.reloadData()
+        buttonsTableView.reloadData()
+    }
+
+    private func formatDays(_ count: Int) -> String {
+        let lastDigit = count % 10
+        let lastTwoDigits = count % 100
+
+        if lastTwoDigits >= 11 && lastTwoDigits <= 14 {
+            return "дней"
+        } else if lastDigit == 1 {
+            return "день"
+        } else if lastDigit >= 2 && lastDigit <= 4 {
+            return "дня"
+        } else {
+            return "дней"
+        }
     }
 
     private func updateCreateButtonState() {
@@ -290,12 +366,24 @@ final class CreateTrackerViewController: UIViewController {
               let category = selectedCategory else { return }
 
         do {
-            let trackerId = UUID()
-            let tracker = Tracker(id: trackerId, name: name, color: color.name, emoji: emoji, schedule: schedule, categoryTitle: category.title)
-            try trackerStore.addTracker(tracker, to: category.title)
+            let tracker = Tracker(
+                id: isEditingMode ? editingTracker!.id : UUID(),
+                name: name,
+                color: color.name,
+                emoji: emoji,
+                schedule: schedule,
+                categoryTitle: category.title,
+                isPinned: isEditingMode ? editingTracker!.isPinned : false
+            )
+
+            if isEditingMode {
+                try trackerStore.update(tracker)
+            } else {
+                try trackerStore.addTracker(tracker, to: category.title)
+            }
             dismiss(animated: true)
         } catch {
-            print("Error creating tracker: \(error.localizedDescription)")
+            print("Error \(isEditingMode ? "updating" : "creating") tracker: \(error.localizedDescription)")
         }
     }
 }
@@ -316,13 +404,17 @@ extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionVie
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "EmojiCell", for: indexPath) as? EmojiCell else {
                 return UICollectionViewCell()
             }
-            cell.configure(with: emojis[indexPath.item])
+            let emoji = emojis[indexPath.item]
+            cell.configure(with: emoji)
+            cell.isSelected = emoji == selectedEmoji
             return cell
         } else {
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ColorCell", for: indexPath) as? ColorCell else {
                 return UICollectionViewCell()
             }
-            cell.configure(with: colors[indexPath.item].color)
+            let color = colors[indexPath.item].color
+            cell.configure(with: color)
+            cell.isSelected = colors[indexPath.item].name == selectedColor?.name
             return cell
         }
     }
@@ -333,6 +425,7 @@ extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionVie
         } else {
             selectedColor = colors[indexPath.item]
         }
+        // collectionView.reloadData()
         updateCreateButtonState()
     }
 

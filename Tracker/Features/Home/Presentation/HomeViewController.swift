@@ -222,7 +222,6 @@ final class HomeViewController: UIViewController {
         collectionView.isHidden = !hasTrackersForSelectedDate
     }
 
-    
     private func performSearch() {
         searchWorkItem?.cancel()
         
@@ -234,6 +233,52 @@ final class HomeViewController: UIViewController {
         
         searchWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Layout.searchDebounceDelay, execute: workItem)
+    }
+    
+    // MARK: - Context Menu Actions
+    
+    private func pinTracker(_ tracker: Tracker) {
+        do {
+            try trackerStore.pinTracker(tracker)
+            collectionView.reloadData()
+        } catch {
+            print("Ошибка при закреплении трекера: \(error)")
+        }
+    }
+    
+    private func unpinTracker(_ tracker: Tracker) {
+        do {
+            try trackerStore.unpinTracker(tracker)
+            collectionView.reloadData()
+        } catch {
+            print("Ошибка при откреплении трекера: \(error)")
+        }
+    }
+    
+    private func editTracker(_ tracker: Tracker) {
+        let editViewController = CreateTrackerViewController(type: .habit, trackerStore: trackerStore, trackerRecordStore: trackerRecordStore, editingTracker: tracker)
+        let navigationController = UINavigationController(rootViewController: editViewController)
+        present(navigationController, animated: true)
+    }
+    
+    private func deleteTracker(_ tracker: Tracker) {
+        let alert = UIAlertController(
+            title: "Удалить привычку?",
+            message: "Вы уверены, что хотите удалить эту привычку?",
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            do {
+                try self.trackerStore.delete(tracker)
+                self.collectionView.reloadData()
+                self.updateUI()
+            } catch {
+                print("Ошибка при удалении трекера: \(error)")
+            }
+        })
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        present(alert, animated: true)
     }
 }
 
@@ -275,7 +320,8 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
             emoji: tracker.emoji,
             days: completedDays,
             color: tracker.color,
-            completed: isCompletedToday
+            completed: isCompletedToday,
+            isPinned: tracker.isPinned
         )
         cell.delegate = self
         return cell
@@ -298,6 +344,38 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
         let title = trackerDataProvider.titleForSection(indexPath.section) ?? ""
         header.configure(with: title)
         return header
+    }
+    
+    func collectionView(
+        _ collectionView: UICollectionView,
+        contextMenuConfigurationForItemAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        guard let tracker = trackerDataProvider.tracker(at: indexPath) else { return nil }
+        
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            let pinActionTitle = tracker.isPinned ? "Открепить" : "Закрепить"
+            let pinAction = UIAction(title: pinActionTitle) { [weak self] _ in
+                guard let self = self else { return }
+                if tracker.isPinned {
+                    self.unpinTracker(tracker)
+                } else {
+                    self.pinTracker(tracker)
+                }
+            }
+            
+            let editAction = UIAction(title: "Редактировать") { [weak self] _ in
+                guard let self = self else { return }
+                self.editTracker(tracker)
+            }
+            
+            let deleteAction = UIAction(title: "Удалить", attributes: .destructive) { [weak self] _ in
+                guard let self = self else { return }
+                self.deleteTracker(tracker)
+            }
+            
+            return UIMenu(title: "", children: [pinAction, editAction, deleteAction])
+        }
     }
 }
 
@@ -339,7 +417,7 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
 
 extension HomeViewController: TrackerTypeViewControllerDelegate {
     func trackerTypeViewController(_ viewController: TrackerTypeViewController, didSelect type: TrackerType) {
-        let createViewController = CreateTrackerViewController(type: type, trackerStore: trackerStore)
+        let createViewController = CreateTrackerViewController(type: type, trackerStore: trackerStore, trackerRecordStore: trackerRecordStore)
         viewController.navigationController?.pushViewController(createViewController, animated: true)
     }
 }
@@ -400,6 +478,8 @@ extension HomeViewController: UISearchResultsUpdating {
         performSearch()
     }
 }
+
+// MARK: - Constants
 
 extension HomeViewController {
     private enum Constants {

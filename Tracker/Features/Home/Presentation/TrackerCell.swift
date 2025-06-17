@@ -10,6 +10,9 @@ extension TrackerCell {
         static let cardCornerRadius: CGFloat = 16
         static let emojiBackgroundCornerRadius: CGFloat = 14
         static let plusButtonCornerRadius: CGFloat = 17
+        static let pinIconSize: CGFloat = 24
+        static let pinIconRightInset: CGFloat = 4
+        static let pinIconTopInset: CGFloat = 12
         
         static let cardHeight: CGFloat = 90
         static let buttonSize: CGFloat = 34
@@ -38,6 +41,7 @@ final class TrackerCell: UICollectionViewCell {
     private let titleLabel = UILabel()
     private let daysLabel = UILabel()
     private let plusButton = UIButton()
+    private let pinIconView = UIImageView()
     
     // MARK: - Properties
     
@@ -58,7 +62,7 @@ final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Public Methods
     
-    func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false) {
+    func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false, isPinned: Bool = false) {
         titleLabel.text = title
         emojiLabel.text = emoji
         daysLabel.text = formatDaysCount(days)
@@ -69,6 +73,7 @@ final class TrackerCell: UICollectionViewCell {
             print("There is no color named \(color)")
         }
         isCompleted = completed
+        pinIconView.isHidden = !isPinned
         updateButtonStyle()
     }
 
@@ -114,6 +119,12 @@ final class TrackerCell: UICollectionViewCell {
         plusButton.layer.cornerRadius = Constants.plusButtonCornerRadius
         plusButton.addTarget(self, action: #selector(plusButtonTapped), for: .touchUpInside)
         contentView.addSubview(plusButton)
+
+        // Настройка иконки pin.fill
+        pinIconView.image = UIImage(systemName: "pin.fill")
+        pinIconView.tintColor = .white
+        pinIconView.isHidden = true
+        cardView.addSubview(pinIconView)
     }
 
     private func layoutUI() {
@@ -145,6 +156,13 @@ final class TrackerCell: UICollectionViewCell {
             make.centerY.equalTo(daysLabel.snp.centerY)
             make.width.height.equalTo(Constants.buttonSize)
             make.bottom.equalToSuperview().inset(Constants.buttonBottomInset)
+        }
+
+        // Констрейнты для pinIconView
+        pinIconView.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(Constants.pinIconRightInset)
+            make.top.equalToSuperview().offset(Constants.pinIconTopInset)
+            make.width.height.equalTo(Constants.pinIconSize)
         }
     }
     
