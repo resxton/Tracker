@@ -1,5 +1,6 @@
 import UIKit
 import SnapKit
+import YandexMobileMetrica
 
 final class HomeViewController: UIViewController {
     
@@ -9,7 +10,7 @@ final class HomeViewController: UIViewController {
         guard let image = UIImage(named: Constants.stubImage) else {
             fatalError("[HomeViewController] – Не существует картинки-заглушки")
         }
-
+        
         let stubLabel = UILabel()
         stubLabel.text = Constants.stubMessage
         stubLabel.textAlignment = .center
@@ -34,7 +35,7 @@ final class HomeViewController: UIViewController {
         guard let image = UIImage(named: Constants.noResultsStubImage) else {
             fatalError("[HomeViewController] – Не существует картинки-заглушки для результатов")
         }
-
+        
         let stubLabel = UILabel()
         stubLabel.text = Constants.noResultsStubMessage
         stubLabel.textAlignment = .center
@@ -132,7 +133,7 @@ final class HomeViewController: UIViewController {
     }
     
     // MARK: - Lifecycle
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -144,6 +145,32 @@ final class HomeViewController: UIViewController {
         updateVisibleCategories()
         updateFilter()
         updateUI()
+        
+        // Отправка события открытия экрана
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "open",
+            "screen": "Main"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        
+        // Отправка события закрытия экрана
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "close",
+            "screen": "Main"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
     }
     
     // MARK: - Private Methods
@@ -153,7 +180,7 @@ final class HomeViewController: UIViewController {
         updateFilter()
         updateUI()
     }
-
+    
     private func setupNavigationItems() {
         guard let leftNavIcon = UIImage(named: Constants.addButtonIcon)?
             .withRenderingMode(.alwaysTemplate)
@@ -190,6 +217,17 @@ final class HomeViewController: UIViewController {
     }
     
     @objc private func addButtonTapped() {
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "click",
+            "screen": "Main",
+            "item": "add_track"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+        
         let typeViewController = TrackerTypeViewController()
         typeViewController.delegate = self
         let navigationController = UINavigationController(rootViewController: typeViewController)
@@ -197,9 +235,20 @@ final class HomeViewController: UIViewController {
     }
     
     @objc private func filterButtonTapped() {
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "click",
+            "screen": "Main",
+            "item": "filter"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+        
         let filterViewController = FilterViewController(selectedFilter: selectedFilter)
         filterViewController.delegate = self
-        let navigationController = UINavigationController(rootViewController: filterViewController)        
+        let navigationController = UINavigationController(rootViewController: filterViewController)
         present(navigationController, animated: true)
     }
     
@@ -307,7 +356,7 @@ final class HomeViewController: UIViewController {
             filterButton.isHidden = false
         }
     }
-
+    
     private func performSearch() {
         searchWorkItem?.cancel()
         
@@ -342,12 +391,34 @@ final class HomeViewController: UIViewController {
     }
     
     private func editTracker(_ tracker: Tracker) {
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "click",
+            "screen": "Main",
+            "item": "edit"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+        
         let editViewController = CreateTrackerViewController(type: .habit, trackerStore: trackerStore, trackerRecordStore: trackerRecordStore, editingTracker: tracker)
         let navigationController = UINavigationController(rootViewController: editViewController)
         present(navigationController, animated: true)
     }
     
     private func deleteTracker(_ tracker: Tracker) {
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "click",
+            "screen": "Main",
+            "item": "delete"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+        
         let alert = UIAlertController(
             title: "Удалить привычку?",
             message: "Вы уверены, что хотите удалить эту привычку?",
@@ -366,6 +437,12 @@ final class HomeViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
         present(alert, animated: true)
     }
+    
+    // MARK: - Analytics
+    
+    private func logAnalyticsEvent(name: String, parameters: [AnyHashable: Any]) {
+        print("Analytics Event: name=\(name), parameters=\(parameters)")
+    }
 }
 
 // MARK: - UICollectionViewDelegate & UICollectionViewDataSource
@@ -374,14 +451,14 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return trackerDataProvider.numberOfSections
     }
-
+    
     func collectionView(
         _ collectionView: UICollectionView,
         numberOfItemsInSection section: Int
     ) -> Int {
         return trackerDataProvider.numberOfItems(in: section)
     }
-
+    
     func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
@@ -393,14 +470,14 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
             assertionFailure("Failed to dequeue TrackerCell")
             return UICollectionViewCell()
         }
-
+        
         guard let tracker = trackerDataProvider.tracker(at: indexPath) else {
             return UICollectionViewCell()
         }
-
+        
         let completedDays = (try? trackerRecordStore.countRecords(for: tracker.id)) ?? 0
         let isCompletedToday = (try? trackerRecordStore.isRecordExist(for: tracker.id, on: currentDate)) ?? false
-
+        
         cell.configure(
             title: tracker.name,
             emoji: tracker.emoji,
@@ -412,7 +489,7 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
         cell.delegate = self
         return cell
     }
-
+    
     func collectionView(
         _ collectionView: UICollectionView,
         viewForSupplementaryElementOfKind kind: String,
@@ -420,13 +497,13 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
     ) -> UICollectionReusableView {
         guard kind == UICollectionView.elementKindSectionHeader,
               let header = collectionView.dequeueReusableSupplementaryView(
-                  ofKind: kind,
-                  withReuseIdentifier: Constants.headerIdentifier,
-                  for: indexPath
+                ofKind: kind,
+                withReuseIdentifier: Constants.headerIdentifier,
+                for: indexPath
               ) as? HeaderView else {
             return UICollectionReusableView()
         }
-
+        
         let title = trackerDataProvider.titleForSection(indexPath.section) ?? ""
         header.configure(with: title)
         return header
@@ -513,28 +590,40 @@ extension HomeViewController: TrackerTypeViewControllerDelegate {
 extension HomeViewController: TrackerCellDelegate {
     func trackerCellDidTapButton(_ cell: TrackerCell) {
         guard let indexPath = collectionView.indexPath(for: cell) else { return }
-
+        
         let calendar = Calendar.current
         if calendar.compare(currentDate, to: Date(), toGranularity: .day) == .orderedDescending {
             return
         }
-
+        
         guard let tracker = trackerDataProvider.tracker(at: indexPath) else {
             print("Tracker not found at \(indexPath)")
             return
         }
-
+        
+        // Отправка события тапа на трек
+        let eventName = "AnalyticsEvent"
+        let params: [AnyHashable: Any] = [
+            "event": "click",
+            "screen": "Main",
+            "item": "track"
+        ]
+        logAnalyticsEvent(name: eventName, parameters: params)
+        YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
+            print("REPORT ERROR: \(error.localizedDescription)")
+        })
+        
         do {
             let isCompletedToday = try trackerRecordStore.isRecordExist(for: tracker.id, on: currentDate)
-
+            
             if isCompletedToday {
                 try trackerRecordStore.removeRecord(for: tracker.id, on: currentDate)
             } else {
                 try trackerRecordStore.addRecord(for: tracker.id, on: currentDate)
             }
-
+            
             let completedDays = try trackerRecordStore.countRecords(for: tracker.id)
-
+            
             cell.configure(
                 title: tracker.name,
                 emoji: tracker.emoji,
