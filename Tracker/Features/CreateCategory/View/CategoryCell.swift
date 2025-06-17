@@ -14,7 +14,7 @@ class CategoryCell: UITableViewCell {
     private lazy var checkmarkView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(systemName: "checkmark")
-        imageView.tintColor = .blue
+        imageView.tintColor = .ypBlue
         imageView.isHidden = true
         return imageView
     }()

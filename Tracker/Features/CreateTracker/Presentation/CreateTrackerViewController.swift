@@ -198,7 +198,7 @@ final class CreateTrackerViewController: UIViewController {
     }
 
     private func setupUI() {
-        view.backgroundColor = .white
+        view.backgroundColor = .ypWhite
 
         view.addSubview(scrollView)
         view.addSubview(buttonsStack)
