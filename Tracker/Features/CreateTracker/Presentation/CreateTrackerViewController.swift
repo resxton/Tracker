@@ -102,7 +102,7 @@ final class CreateTrackerViewController: UIViewController {
     private lazy var createButton: UIButton = {
         let button = UIButton()
         button.setTitle("Создать", for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.ypWhite, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         button.backgroundColor = .ypGrey
         button.layer.cornerRadius = 16

@@ -10,9 +10,9 @@ extension TrackerCell {
         static let cardCornerRadius: CGFloat = 16
         static let emojiBackgroundCornerRadius: CGFloat = 14
         static let plusButtonCornerRadius: CGFloat = 17
-        static let pinIconSize: CGFloat = 24
-        static let pinIconRightInset: CGFloat = 4
-        static let pinIconTopInset: CGFloat = 12
+        static let pinIconSize: CGSize = CGSize(width: 8, height: 12)
+        static let pinIconRightInset: CGFloat = 12
+        static let pinIconTopInset: CGFloat = 18
         
         static let cardHeight: CGFloat = 90
         static let buttonSize: CGFloat = 34
@@ -162,7 +162,8 @@ final class TrackerCell: UICollectionViewCell {
         pinIconView.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(Constants.pinIconRightInset)
             make.top.equalToSuperview().offset(Constants.pinIconTopInset)
-            make.width.height.equalTo(Constants.pinIconSize)
+            make.width.equalTo(Constants.pinIconSize.width)
+            make.height.equalTo(Constants.pinIconSize.height)
         }
     }
     
