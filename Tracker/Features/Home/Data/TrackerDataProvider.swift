@@ -127,7 +127,7 @@ extension TrackerDataProvider: TrackerDataProviderProtocol {
         if let filter = filter {
             switch filter {
             case .all, .today:
-                break // Предикаты для .today уже добавлены выше
+                break
             case .completed:
                 let completedIDs = try? trackerRecordStore.getTrackerIDsWithRecords(on: date)
                 if let ids = completedIDs, !ids.isEmpty {

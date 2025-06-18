@@ -1,70 +1,9 @@
 import UIKit
 import SnapKit
 
-// Класс для отображения ячейки статистики с градиентной обводкой
-private class StatCellView: UIView {
-    let gradientLayer = CAGradientLayer()
-    let shapeLayer = CAShapeLayer()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setup()
-    }
-    
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setup()
-    }
-    
-    private func setup() {
-        backgroundColor = .ypWhite
-        layer.cornerRadius = 16
-        
-        // Настраиваем градиентный слой
-        gradientLayer.cornerRadius = 16
-        
-        // Создаем цвета для градиента
-        let leftColor = UIColor.colorSelection3.cgColor
-        let centerColor = UIColor.colorSelection9.cgColor
-        let rightColor = UIColor.colorSelection1.cgColor
-        
-        gradientLayer.colors = [leftColor, centerColor, rightColor]
-        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-        gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-        gradientLayer.type = .axial
-        
-        // Настраиваем shape layer для маски
-        shapeLayer.fillRule = .evenOdd
-        
-        // Добавляем слои
-        layer.addSublayer(gradientLayer)
-        gradientLayer.mask = shapeLayer
-    }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        
-        // Обновляем размер и позицию градиентного слоя
-        gradientLayer.frame = bounds
-        
-        // Создаем пути для маски (внешний и внутренний контур)
-        let outerPath = UIBezierPath(roundedRect: bounds, cornerRadius: 16).cgPath
-        let innerPath = UIBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), cornerRadius: 15).cgPath
-        
-        // Создаем путь с разницей между внешним и внутренним контуром
-        let path = CGMutablePath()
-        path.addPath(outerPath)
-        path.addPath(innerPath)
-        
-        // Применяем путь к shape layer
-        shapeLayer.path = path
-    }
-}
-
 class StatsViewController: UIViewController {
-    private let trackerRecordStore: TrackerRecordStore
-    private let trackerStore: TrackerStore
-    private let trackerCategoryStore: TrackerCategoryStore
+
+    // MARK: - Visual Components
     
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
@@ -167,6 +106,15 @@ class StatsViewController: UIViewController {
         return label
     }()
     
+    
+    // MARK: - Private Properties
+    
+    private let trackerRecordStore: TrackerRecordStore
+    private let trackerStore: TrackerStore
+    private let trackerCategoryStore: TrackerCategoryStore
+    
+    // MARK: - Initializers
+    
     init(trackerRecordStore: TrackerRecordStore, trackerStore: TrackerStore, trackerCategoryStore: TrackerCategoryStore) {
         self.trackerRecordStore = trackerRecordStore
         self.trackerStore = trackerStore
@@ -177,6 +125,8 @@ class StatsViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -189,6 +139,8 @@ class StatsViewController: UIViewController {
         super.viewWillAppear(animated)
         loadStats()
     }
+    
+    // MARK: - Private Methods
     
     private func setupUI() {
         view.addSubview(titleLabel)
@@ -226,12 +178,10 @@ class StatsViewController: UIViewController {
             make.bottom.equalToSuperview()
         }
         
-        // Добавляем ячейки в контейнер
         [bestStreakCell, perfectDaysCell, completedTrackersCell, averageRecordsCell].forEach { cell in
             statsContainer.addSubview(cell)
         }
         
-        // Настройка ячеек
         let cells = [(bestStreakCell, bestStreakValue, bestStreakSubtitle),
                      (perfectDaysCell, perfectDaysValue, perfectDaysSubtitle),
                      (completedTrackersCell, completedTrackersValue, completedTrackersSubtitle),
@@ -263,7 +213,6 @@ class StatsViewController: UIViewController {
     }
     
     private func loadStats() {
-        // Показать индикатор загрузки если нужно
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             
@@ -306,8 +255,7 @@ class StatsViewController: UIViewController {
         var maxStreak = 0
         let calendar = Calendar.current
         let today = Date()
-        // Ограничим поиск последними 365 днями
-        let lookbackPeriod = 365
+        let lookbackPeriod = 30
         
         for tracker in trackers {
             var currentStreak = 0
@@ -351,13 +299,11 @@ class StatsViewController: UIViewController {
         let calendar = Calendar.current
         var perfectDaysCount = 0
         var date = Date()
-        let lookbackPeriod = 30 // Проверяем последние 30 дней
+        let lookbackPeriod = 30
         
-        // Кеширование результатов
         var recordsByDate = [Date: [UUID]]()
         var trackersByScheduleDay = [Schedule: [Tracker]]()
         
-        // Предварительно группируем трекеры по расписанию
         for tracker in trackers {
             for day in tracker.schedule.selectedDays {
                 var trackersForDay = trackersByScheduleDay[day] ?? []
@@ -371,11 +317,9 @@ class StatsViewController: UIViewController {
             let weekday = calendar.component(.weekday, from: normalizedDate)
             let scheduleDay = Schedule.fromWeekday(weekday)
             
-            // Получаем трекеры для текущего дня недели
             let trackersForToday = trackersByScheduleDay[scheduleDay] ?? []
             
             if trackersForToday.isEmpty {
-                // Если на этот день нет трекеров, просто пропускаем
                 if let previousDate = calendar.date(byAdding: .day, value: -1, to: date) {
                     date = previousDate
                 } else {
@@ -384,7 +328,6 @@ class StatsViewController: UIViewController {
                 continue
             }
             
-            // Получаем записи для текущего дня
             let dayRecords: [UUID]
             if let cachedRecords = recordsByDate[normalizedDate] {
                 dayRecords = cachedRecords
@@ -395,7 +338,6 @@ class StatsViewController: UIViewController {
                 dayRecords = []
             }
             
-            // Проверяем, все ли трекеры для этого дня имеют записи
             let allTrackersCompleted = trackersForToday.allSatisfy { tracker in
                 dayRecords.contains(tracker.id)
             }
@@ -419,7 +361,6 @@ class StatsViewController: UIViewController {
             return 0
         }
         
-        // Кешируем результаты для оптимизации
         var recordsCount = 0
         for tracker in trackers {
             if let count = try? trackerRecordStore.countRecords(for: tracker.id) {

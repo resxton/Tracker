@@ -38,7 +38,6 @@ extension Schedule {
         }
     }
     
-    // Дополнительно можно добавить метод для получения названия дня
     var name: String {
         if self == .monday { return "Понедельник" }
         if self == .tuesday { return "Вторник" }
@@ -50,7 +49,6 @@ extension Schedule {
         return ""
     }
     
-    // Получение всех дней из установленного расписания
     var selectedDays: [Schedule] {
         var days: [Schedule] = []
         if self.contains(.monday) { days.append(.monday) }
@@ -63,7 +61,6 @@ extension Schedule {
         return days
     }
     
-    // Получение количества дней в расписании
     var count: Int {
         return selectedDays.count
     }

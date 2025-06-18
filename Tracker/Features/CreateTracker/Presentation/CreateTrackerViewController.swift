@@ -277,10 +277,8 @@ final class CreateTrackerViewController: UIViewController {
     private func configureForEditing() {
         guard let tracker = editingTracker else { return }
 
-        // Настройка кнопки "Сохранить"
         createButton.setTitle("Сохранить", for: .normal)
 
-        // Заполнение полей
         nameTextField.text = tracker.name
         selectedEmoji = tracker.emoji
         selectedColor = colors.first { $0.name == tracker.color }
@@ -289,7 +287,6 @@ final class CreateTrackerViewController: UIViewController {
             selectedCategory = TrackerCategory(title: categoryTitle, trackers: [])
         }
 
-        // Отображение количества дней
         do {
             let completedDays = try trackerRecordStore.countRecords(for: tracker.id)
             daysLabel.text = "\(completedDays) \(formatDays(completedDays))"
@@ -299,7 +296,6 @@ final class CreateTrackerViewController: UIViewController {
             daysLabel.isHidden = true
         }
 
-        // Обновление UI
         updateCreateButtonState()
         emojiCollectionView.reloadData()
         colorCollectionView.reloadData()
@@ -425,7 +421,6 @@ extension CreateTrackerViewController: UICollectionViewDelegate, UICollectionVie
         } else {
             selectedColor = colors[indexPath.item]
         }
-        // collectionView.reloadData()
         updateCreateButtonState()
     }
 

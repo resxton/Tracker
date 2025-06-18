@@ -145,11 +145,9 @@ final class HomeViewController: UIViewController {
         updateFilter()
         updateUI()
         
-        // Setup tab bar items
         tabBarController?.tabBar.items?[0].title = NSLocalizedString("tab_trackers", comment: "Trackers tab title")
         tabBarController?.tabBar.items?[1].title = NSLocalizedString("tab_statistics", comment: "Statistics tab title")
         
-        // Отправка события открытия экрана
         let eventName = "AnalyticsEvent"
         let params: [AnyHashable: Any] = [
             "event": "open",
@@ -164,7 +162,6 @@ final class HomeViewController: UIViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
-        // Отправка события закрытия экрана
         let eventName = "AnalyticsEvent"
         let params: [AnyHashable: Any] = [
             "event": "close",
@@ -324,7 +321,6 @@ final class HomeViewController: UIViewController {
         var hasTrackersForSelectedDate = false
         var hasTrackersInStore = false
         
-        // Проверяем, есть ли трекеры в базе
         do {
             let trackersCount = try trackerStore.fetchTrackersCount()
             hasTrackersInStore = trackersCount > 0
@@ -332,7 +328,6 @@ final class HomeViewController: UIViewController {
             print("Ошибка при проверке трекеров в базе: \(error)")
         }
         
-        // Проверяем, есть ли трекеры для отображения после фильтрации
         for section in 0..<trackerDataProvider.numberOfSections {
             if trackerDataProvider.numberOfItems(in: section) > 0 {
                 hasTrackersForSelectedDate = true
@@ -604,7 +599,6 @@ extension HomeViewController: TrackerCellDelegate {
             return
         }
         
-        // Отправка события тапа на трек
         let eventName = "AnalyticsEvent"
         let params: [AnyHashable: Any] = [
             "event": "click",

@@ -1,34 +1,10 @@
 import UIKit
 import SnapKit
 
+// MARK: - TrackerCellDelegate
+
 protocol TrackerCellDelegate: AnyObject {
     func trackerCellDidTapButton(_ cell: TrackerCell)
-}
-
-extension TrackerCell {
-    private enum Constants {
-        static let cardCornerRadius: CGFloat = 16
-        static let emojiBackgroundCornerRadius: CGFloat = 14
-        static let plusButtonCornerRadius: CGFloat = 17
-        static let pinIconSize: CGSize = CGSize(width: 8, height: 12)
-        static let pinIconRightInset: CGFloat = 12
-        static let pinIconTopInset: CGFloat = 18
-        
-        static let cardHeight: CGFloat = 90
-        static let buttonSize: CGFloat = 34
-        static let emojiBackgroundSize: CGFloat = 28
-        
-        static let defaultInset: CGFloat = 12
-        static let titleBottomInset: CGFloat = 12
-        static let buttonBottomInset: CGFloat = 16
-        
-        static let titleFontSize: CGFloat = 12
-        static let emojiFontSize: CGFloat = 16
-        static let daysLabelFontSize: CGFloat = 12
-        
-        static let emojiBackgroundAlpha: CGFloat = 0.3
-        static let completedButtonAlpha: CGFloat = 0.3
-    }
 }
 
 final class TrackerCell: UICollectionViewCell {
@@ -119,8 +95,7 @@ final class TrackerCell: UICollectionViewCell {
         plusButton.layer.cornerRadius = Constants.plusButtonCornerRadius
         plusButton.addTarget(self, action: #selector(plusButtonTapped), for: .touchUpInside)
         contentView.addSubview(plusButton)
-
-        // Настройка иконки pin.fill
+        
         pinIconView.image = UIImage(systemName: "pin.fill")
         pinIconView.tintColor = .white
         pinIconView.isHidden = true
@@ -176,5 +151,33 @@ final class TrackerCell: UICollectionViewCell {
     
     @objc private func plusButtonTapped() {
         delegate?.trackerCellDidTapButton(self)
+    }
+}
+
+// MARK: - Constants
+
+extension TrackerCell {
+    private enum Constants {
+        static let cardCornerRadius: CGFloat = 16
+        static let emojiBackgroundCornerRadius: CGFloat = 14
+        static let plusButtonCornerRadius: CGFloat = 17
+        static let pinIconSize: CGSize = CGSize(width: 8, height: 12)
+        static let pinIconRightInset: CGFloat = 12
+        static let pinIconTopInset: CGFloat = 18
+        
+        static let cardHeight: CGFloat = 90
+        static let buttonSize: CGFloat = 34
+        static let emojiBackgroundSize: CGFloat = 28
+        
+        static let defaultInset: CGFloat = 12
+        static let titleBottomInset: CGFloat = 12
+        static let buttonBottomInset: CGFloat = 16
+        
+        static let titleFontSize: CGFloat = 12
+        static let emojiFontSize: CGFloat = 16
+        static let daysLabelFontSize: CGFloat = 12
+        
+        static let emojiBackgroundAlpha: CGFloat = 0.3
+        static let completedButtonAlpha: CGFloat = 0.3
     }
 }
