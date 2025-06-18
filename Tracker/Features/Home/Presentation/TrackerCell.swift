@@ -65,7 +65,7 @@ final class TrackerCell: UICollectionViewCell {
     func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false, isPinned: Bool = false) {
         titleLabel.text = title
         emojiLabel.text = emoji
-        daysLabel.text = formatDaysCount(days)
+        daysLabel.text = String(format: NSLocalizedString("days_count", comment: "Days count format"), days)
         if let colorAsset = UIColor(named: color) {
             cardView.backgroundColor = colorAsset
             plusButton.backgroundColor = colorAsset
@@ -108,7 +108,7 @@ final class TrackerCell: UICollectionViewCell {
         titleLabel.numberOfLines = 2
         cardView.addSubview(titleLabel)
 
-        daysLabel.text = "1 день"
+        daysLabel.text = String(format: NSLocalizedString("days_count", comment: "Days count format"), 1)
         daysLabel.font = UIFont.systemFont(ofSize: Constants.daysLabelFontSize, weight: .medium)
         daysLabel.textColor = .ypBlack
         contentView.addSubview(daysLabel)
@@ -158,7 +158,6 @@ final class TrackerCell: UICollectionViewCell {
             make.bottom.equalToSuperview().inset(Constants.buttonBottomInset)
         }
 
-        // Констрейнты для pinIconView
         pinIconView.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(Constants.pinIconRightInset)
             make.top.equalToSuperview().offset(Constants.pinIconTopInset)
@@ -173,24 +172,6 @@ final class TrackerCell: UICollectionViewCell {
             for: .normal
         )
         plusButton.alpha = isCompleted ? Constants.completedButtonAlpha : 1.0
-    }
-    
-    private func formatDaysCount(_ count: Int) -> String {
-        let lastDigit = count % 10
-        let lastTwoDigits = count % 100
-        
-        if lastTwoDigits >= 11 && lastTwoDigits <= 14 {
-            return "\(count) дней"
-        }
-        
-        switch lastDigit {
-        case 1:
-            return "\(count) день"
-        case 2...4:
-            return "\(count) дня"
-        default:
-            return "\(count) дней"
-        }
     }
     
     @objc private func plusButtonTapped() {

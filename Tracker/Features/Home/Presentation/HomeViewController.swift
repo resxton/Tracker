@@ -12,7 +12,7 @@ final class HomeViewController: UIViewController {
         }
         
         let stubLabel = UILabel()
-        stubLabel.text = Constants.stubMessage
+        stubLabel.text = NSLocalizedString("stub_message", comment: "Stub message for no trackers")
         stubLabel.textAlignment = .center
         stubLabel.font = .systemFont(ofSize: Constants.stubTitleFontSize)
         
@@ -37,7 +37,7 @@ final class HomeViewController: UIViewController {
         }
         
         let stubLabel = UILabel()
-        stubLabel.text = Constants.noResultsStubMessage
+        stubLabel.text = NSLocalizedString("no_results_stub_message", comment: "Stub message for no results")
         stubLabel.textAlignment = .center
         stubLabel.font = .systemFont(ofSize: Constants.stubTitleFontSize)
         
@@ -60,7 +60,7 @@ final class HomeViewController: UIViewController {
         let controller = UISearchController(searchResultsController: nil)
         controller.searchResultsUpdater = self
         controller.obscuresBackgroundDuringPresentation = false
-        controller.searchBar.placeholder = Constants.searchPlaceholder
+        controller.searchBar.placeholder = NSLocalizedString("search_placeholder", comment: "Search placeholder")
         return controller
     }()
     
@@ -85,14 +85,13 @@ final class HomeViewController: UIViewController {
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
             withReuseIdentifier: Constants.headerIdentifier
         )
-        // Добавляем contentInset для оверскролла
         collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: Constants.Layout.filterButtonHeight + Constants.Layout.filterButtonBottomInset + 16, right: 0)
         return collectionView
     }()
     
     private lazy var filterButton: UIButton = {
         let button = UIButton()
-        button.setTitle("Фильтры", for: .normal)
+        button.setTitle(NSLocalizedString("filter_button_title", comment: "Filter button title"), for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .regular)
         button.backgroundColor = .ypBlue
@@ -146,6 +145,10 @@ final class HomeViewController: UIViewController {
         updateFilter()
         updateUI()
         
+        // Setup tab bar items
+        tabBarController?.tabBar.items?[0].title = NSLocalizedString("tab_trackers", comment: "Trackers tab title")
+        tabBarController?.tabBar.items?[1].title = NSLocalizedString("tab_statistics", comment: "Statistics tab title")
+        
         // Отправка события открытия экрана
         let eventName = "AnalyticsEvent"
         let params: [AnyHashable: Any] = [
@@ -188,7 +191,7 @@ final class HomeViewController: UIViewController {
             fatalError("[HomeViewController] – Не существует картинки для left nav item")
         }
         
-        navigationItem.title = Constants.title
+        navigationItem.title = NSLocalizedString("home_title", comment: "Home screen title")
         navigationItem.searchController = searchController
         
         let addButton = UIBarButtonItem(
@@ -420,11 +423,11 @@ final class HomeViewController: UIViewController {
         })
         
         let alert = UIAlertController(
-            title: "Удалить привычку?",
-            message: "Вы уверены, что хотите удалить эту привычку?",
+            title: NSLocalizedString("delete_tracker_title", comment: "Delete tracker alert title"),
+            message: NSLocalizedString("delete_tracker_message", comment: "Delete tracker alert message"),
             preferredStyle: .actionSheet
         )
-        alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: NSLocalizedString("delete_action", comment: "Delete action"), style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             do {
                 try self.trackerStore.delete(tracker)
@@ -434,7 +437,7 @@ final class HomeViewController: UIViewController {
                 print("Ошибка при удалении трекера: \(error)")
             }
         })
-        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("cancel_action", comment: "Cancel action"), style: .cancel))
         present(alert, animated: true)
     }
     
@@ -517,7 +520,7 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
         guard let tracker = trackerDataProvider.tracker(at: indexPath) else { return nil }
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-            let pinActionTitle = tracker.isPinned ? "Открепить" : "Закрепить"
+            let pinActionTitle = tracker.isPinned ? NSLocalizedString("unpin_action", comment: "Unpin action") : NSLocalizedString("pin_action", comment: "Pin action")
             let pinAction = UIAction(title: pinActionTitle) { [weak self] _ in
                 guard let self = self else { return }
                 if tracker.isPinned {
@@ -527,12 +530,12 @@ extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSour
                 }
             }
             
-            let editAction = UIAction(title: "Редактировать") { [weak self] _ in
+            let editAction = UIAction(title: NSLocalizedString("edit_action", comment: "Edit action")) { [weak self] _ in
                 guard let self = self else { return }
                 self.editTracker(tracker)
             }
             
-            let deleteAction = UIAction(title: "Удалить", attributes: .destructive) { [weak self] _ in
+            let deleteAction = UIAction(title: NSLocalizedString("delete_action", comment: "Delete action"), attributes: .destructive) { [weak self] _ in
                 guard let self = self else { return }
                 self.deleteTracker(tracker)
             }
@@ -672,14 +675,10 @@ extension HomeViewController: FilterViewControllerDelegate {
 
 extension HomeViewController {
     private enum Constants {
-        static let title = "Трекеры"
         static let addButtonIcon = "PlusIcon"
         static let stubImage = "HomeViewStubImage"
-        static let stubMessage = "Что будем отслеживать?"
         static let noResultsStubImage = "HomeViewNoResultsStubImage"
-        static let noResultsStubMessage = "Ничего не найдено"
         static let stubTitleFontSize: CGFloat = 12
-        static let searchPlaceholder = "Поиск"
         static let cellIdentifier = "TrackerCell"
         static let headerIdentifier = "HeaderView"
         

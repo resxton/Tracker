@@ -1,0 +1,27 @@
+/* Navigation title */
+"home_title" = "Трекеры";
+
+/* Filter button title */
+"filter_button_title" = "Фильтры";
+
+/* Search placeholder */
+"search_placeholder" = "Поиск";
+
+/* Stub message for no trackers */
+"stub_message" = "Что будем отслеживать?";
+
+/* Stub message for no results */
+"no_results_stub_message" = "Ничего не найдено";
+
+/* Tab bar item titles */
+"tab_trackers" = "Трекеры";
+"tab_statistics" = "Статистика";
+
+/* Context menu actions */
+"pin_action" = "Закрепить";
+"unpin_action" = "Открепить";
+"edit_action" = "Редактировать";
+"delete_action" = "Удалить";
+"delete_tracker_title" = "Удалить привычку?";
+"delete_tracker_message" = "Вы уверены, что хотите удалить эту привычку?";
+"cancel_action" = "Отмена";
