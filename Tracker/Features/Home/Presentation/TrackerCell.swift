@@ -1,31 +1,10 @@
 import UIKit
 import SnapKit
 
+// MARK: - TrackerCellDelegate
+
 protocol TrackerCellDelegate: AnyObject {
     func trackerCellDidTapButton(_ cell: TrackerCell)
-}
-
-extension TrackerCell {
-    private enum Constants {
-        static let cardCornerRadius: CGFloat = 16
-        static let emojiBackgroundCornerRadius: CGFloat = 14
-        static let plusButtonCornerRadius: CGFloat = 17
-        
-        static let cardHeight: CGFloat = 90
-        static let buttonSize: CGFloat = 34
-        static let emojiBackgroundSize: CGFloat = 28
-        
-        static let defaultInset: CGFloat = 12
-        static let titleBottomInset: CGFloat = 12
-        static let buttonBottomInset: CGFloat = 16
-        
-        static let titleFontSize: CGFloat = 12
-        static let emojiFontSize: CGFloat = 16
-        static let daysLabelFontSize: CGFloat = 12
-        
-        static let emojiBackgroundAlpha: CGFloat = 0.3
-        static let completedButtonAlpha: CGFloat = 0.3
-    }
 }
 
 final class TrackerCell: UICollectionViewCell {
@@ -38,6 +17,7 @@ final class TrackerCell: UICollectionViewCell {
     private let titleLabel = UILabel()
     private let daysLabel = UILabel()
     private let plusButton = UIButton()
+    private let pinIconView = UIImageView()
     
     // MARK: - Properties
     
@@ -58,10 +38,10 @@ final class TrackerCell: UICollectionViewCell {
     
     // MARK: - Public Methods
     
-    func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false) {
+    func configure(title: String, emoji: String, days: Int, color: String, completed: Bool = false, isPinned: Bool = false) {
         titleLabel.text = title
         emojiLabel.text = emoji
-        daysLabel.text = formatDaysCount(days)
+        daysLabel.text = String(format: NSLocalizedString("days_count", comment: "Days count format"), days)
         if let colorAsset = UIColor(named: color) {
             cardView.backgroundColor = colorAsset
             plusButton.backgroundColor = colorAsset
@@ -69,6 +49,7 @@ final class TrackerCell: UICollectionViewCell {
             print("There is no color named \(color)")
         }
         isCompleted = completed
+        pinIconView.isHidden = !isPinned
         updateButtonStyle()
     }
 
@@ -103,7 +84,7 @@ final class TrackerCell: UICollectionViewCell {
         titleLabel.numberOfLines = 2
         cardView.addSubview(titleLabel)
 
-        daysLabel.text = "1 день"
+        daysLabel.text = String(format: NSLocalizedString("days_count", comment: "Days count format"), 1)
         daysLabel.font = UIFont.systemFont(ofSize: Constants.daysLabelFontSize, weight: .medium)
         daysLabel.textColor = .ypBlack
         contentView.addSubview(daysLabel)
@@ -114,6 +95,11 @@ final class TrackerCell: UICollectionViewCell {
         plusButton.layer.cornerRadius = Constants.plusButtonCornerRadius
         plusButton.addTarget(self, action: #selector(plusButtonTapped), for: .touchUpInside)
         contentView.addSubview(plusButton)
+        
+        pinIconView.image = UIImage(systemName: "pin.fill")
+        pinIconView.tintColor = .white
+        pinIconView.isHidden = true
+        cardView.addSubview(pinIconView)
     }
 
     private func layoutUI() {
@@ -146,6 +132,13 @@ final class TrackerCell: UICollectionViewCell {
             make.width.height.equalTo(Constants.buttonSize)
             make.bottom.equalToSuperview().inset(Constants.buttonBottomInset)
         }
+
+        pinIconView.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(Constants.pinIconRightInset)
+            make.top.equalToSuperview().offset(Constants.pinIconTopInset)
+            make.width.equalTo(Constants.pinIconSize.width)
+            make.height.equalTo(Constants.pinIconSize.height)
+        }
     }
     
     private func updateButtonStyle() {
@@ -156,25 +149,35 @@ final class TrackerCell: UICollectionViewCell {
         plusButton.alpha = isCompleted ? Constants.completedButtonAlpha : 1.0
     }
     
-    private func formatDaysCount(_ count: Int) -> String {
-        let lastDigit = count % 10
-        let lastTwoDigits = count % 100
-        
-        if lastTwoDigits >= 11 && lastTwoDigits <= 14 {
-            return "\(count) дней"
-        }
-        
-        switch lastDigit {
-        case 1:
-            return "\(count) день"
-        case 2...4:
-            return "\(count) дня"
-        default:
-            return "\(count) дней"
-        }
-    }
-    
     @objc private func plusButtonTapped() {
         delegate?.trackerCellDidTapButton(self)
+    }
+}
+
+// MARK: - Constants
+
+extension TrackerCell {
+    private enum Constants {
+        static let cardCornerRadius: CGFloat = 16
+        static let emojiBackgroundCornerRadius: CGFloat = 14
+        static let plusButtonCornerRadius: CGFloat = 17
+        static let pinIconSize: CGSize = CGSize(width: 8, height: 12)
+        static let pinIconRightInset: CGFloat = 12
+        static let pinIconTopInset: CGFloat = 18
+        
+        static let cardHeight: CGFloat = 90
+        static let buttonSize: CGFloat = 34
+        static let emojiBackgroundSize: CGFloat = 28
+        
+        static let defaultInset: CGFloat = 12
+        static let titleBottomInset: CGFloat = 12
+        static let buttonBottomInset: CGFloat = 16
+        
+        static let titleFontSize: CGFloat = 12
+        static let emojiFontSize: CGFloat = 16
+        static let daysLabelFontSize: CGFloat = 12
+        
+        static let emojiBackgroundAlpha: CGFloat = 0.3
+        static let completedButtonAlpha: CGFloat = 0.3
     }
 }

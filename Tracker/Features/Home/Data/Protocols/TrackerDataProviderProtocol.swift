@@ -6,5 +6,5 @@ protocol TrackerDataProviderProtocol: AnyObject {
     func numberOfItems(in section: Int) -> Int
     func tracker(at indexPath: IndexPath) -> Tracker?
     func titleForSection(_ section: Int) -> String?
-    func updateFilter(schedule: Schedule?, searchText: String?)
+    func updateFilter(schedule: Schedule?, searchText: String?, filter: TrackerFilter?, date: Date)
 }

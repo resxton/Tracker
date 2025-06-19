@@ -15,7 +15,7 @@ final class AppDIContainer {
         TrackerRecordStore(coreDataStack: coreDataStack)
     }()
     private lazy var trackerDataProvider: TrackerDataProviderProtocol = {
-        TrackerDataProvider(context: coreDataStack.viewContext)
+        TrackerDataProvider(context: coreDataStack.viewContext, trackerRecordStore: trackerRecordStore)
     }()
     
     // MARK: - Public Methods
@@ -55,7 +55,12 @@ final class AppDIContainer {
             fatalError("[AppDIContainer] – Не существует картинки для таба StatsView")
         }
         
-        let statsView = StatsViewController()
+        let statsView = StatsViewController(
+            trackerRecordStore: trackerRecordStore,
+            trackerStore: trackerStore,
+            trackerCategoryStore: trackerCategoryStore
+        )
+        
         statsView.tabBarItem = UITabBarItem(
             title: Constants.statsViewTabTitle,
             image: tabIcon,

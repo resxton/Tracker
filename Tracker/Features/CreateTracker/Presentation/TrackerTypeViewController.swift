@@ -59,7 +59,7 @@ final class TrackerTypeViewController: UIViewController {
     }
     
     private func setupUI() {
-        view.backgroundColor = .white
+        view.backgroundColor = .ypWhite
         
         view.addSubview(habitButton)
         view.addSubview(irregularEventButton)

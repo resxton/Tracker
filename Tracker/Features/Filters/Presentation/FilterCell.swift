@@ -1,6 +1,6 @@
 import UIKit
 
-class CategoryCell: UITableViewCell {
+class FilterCell: UITableViewCell {
     
     // MARK: - Visual Components
     
@@ -41,7 +41,6 @@ class CategoryCell: UITableViewCell {
 
     private func setupUI() {
         contentView.backgroundColor = .ypBackground
-        contentView.layer.cornerRadius = 16
         contentView.clipsToBounds = true
 
         contentView.addSubview(titleLabel)
