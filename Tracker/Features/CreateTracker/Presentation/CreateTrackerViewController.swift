@@ -1,6 +1,10 @@
 import UIKit
 import SnapKit
 
+protocol EditTrackerDelegate: AnyObject {
+    func didUpdateTracker()
+}
+
 final class CreateTrackerViewController: UIViewController {
     
     // MARK: - Visual Components
@@ -42,6 +46,7 @@ final class CreateTrackerViewController: UIViewController {
         textField.smartDashesType = .no
         textField.smartQuotesType = .no
         textField.smartInsertDeleteType = .no
+        textField.clearButtonMode = .whileEditing
         return textField
     }()
 
@@ -118,6 +123,21 @@ final class CreateTrackerViewController: UIViewController {
         stack.distribution = .fillEqually
         return stack
     }()
+    
+    private lazy var errorLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Ограничение 38 символов"
+        label.textColor = .ypRed
+        label.font = .systemFont(ofSize: 17, weight: .regular)
+        label.textAlignment = .center
+        label.isHidden = true
+        label.alpha = 0
+        return label
+    }()
+    
+    // MARK: - Public Properties
+    
+    weak var editDelegate: EditTrackerDelegate?
 
     // MARK: - Private Properties
     
@@ -130,6 +150,8 @@ final class CreateTrackerViewController: UIViewController {
     private var selectedCategory: TrackerCategory?
     private let trackerStore: TrackerStore
     private let trackerRecordStore: TrackerRecordStore
+    private let maxCharacters = 38
+    private var isErrorLabelVisible = false
 
     private let emojis = ["🙂", "😻", "🌺", "🐶", "❤️", "😱", "😇", "😡", "🥶", "🤔", "🙌", "🍔", "🥦", "🏓", "🥇", "🎸", "🏝", "😪"]
 
@@ -186,7 +208,7 @@ final class CreateTrackerViewController: UIViewController {
     // MARK: - Private Methods
     
     private func setupNavigationBar() {
-        navigationItem.title = isEditingMode ? "Редактировать трекер" : trackerType.createTitle
+        navigationItem.title = isEditingMode ? "Редактирование привычки" : trackerType.createTitle
         navigationItem.hidesBackButton = true
 
         if let navigationBar = navigationController?.navigationBar {
@@ -207,6 +229,7 @@ final class CreateTrackerViewController: UIViewController {
 
         contentView.addSubview(daysLabel)
         contentView.addSubview(nameTextField)
+        contentView.addSubview(errorLabel)
         contentView.addSubview(buttonsTableView)
         contentView.addSubview(emojiCollectionView)
         contentView.addSubview(colorCollectionView)
@@ -244,8 +267,14 @@ final class CreateTrackerViewController: UIViewController {
             make.height.equalTo(75)
         }
 
+        errorLabel.snp.makeConstraints { make in
+            make.top.equalTo(nameTextField.snp.bottom)
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.height.equalTo(34)
+        }
+
         buttonsTableView.snp.makeConstraints { make in
-            make.top.equalTo(nameTextField.snp.bottom).offset(24)
+            make.top.equalTo(errorLabel.snp.bottom).offset(isErrorLabelVisible ? 32 : -10)
             make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(trackerType == .habit ? 150 : 75)
         }
@@ -270,8 +299,30 @@ final class CreateTrackerViewController: UIViewController {
         }
     }
 
+    private func updateConstraintsForErrorLabel(visible: Bool, animated: Bool) {
+        isErrorLabelVisible = visible
+        errorLabel.isHidden = !visible
+
+        if animated {
+            UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut], animations: {
+                self.errorLabel.alpha = visible ? 1 : 0
+                self.buttonsTableView.snp.updateConstraints { make in
+                    make.top.equalTo(self.errorLabel.snp.bottom).offset(visible ? 32 : -10)
+                }
+                self.view.layoutIfNeeded()
+            })
+        } else {
+            errorLabel.alpha = visible ? 1 : 0
+            buttonsTableView.snp.updateConstraints { make in
+                make.top.equalTo(errorLabel.snp.bottom).offset(visible ? 32 : -10)
+            }
+            view.layoutIfNeeded()
+        }
+    }
+
     private func setupTextFieldDelegate() {
         nameTextField.delegate = self
+        nameTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
     }
 
     private func configureForEditing() {
@@ -318,12 +369,20 @@ final class CreateTrackerViewController: UIViewController {
     }
 
     private func updateCreateButtonState() {
-        let isEnabled = !nameTextField.text!.isEmpty &&
+        let isTextValid = !(nameTextField.text?.isEmpty ?? true) && (nameTextField.text?.count ?? 0) <= maxCharacters
+        let isEnabled = isTextValid &&
                        selectedEmoji != nil &&
                        selectedColor != nil &&
                        (trackerType == .irregularEvent || !schedule.isEmpty)
         createButton.isEnabled = isEnabled
         createButton.backgroundColor = isEnabled ? .ypBlack : .ypGrey
+    }
+
+    @objc private func textFieldDidChange(_ textField: UITextField) {
+        let textCount = textField.text?.count ?? 0
+        let shouldShowError = textCount > maxCharacters
+        updateConstraintsForErrorLabel(visible: shouldShowError, animated: true)
+        updateCreateButtonState()
     }
 
     @objc private func categoryButtonTapped() {
@@ -359,6 +418,7 @@ final class CreateTrackerViewController: UIViewController {
               let emoji = selectedEmoji,
               let color = selectedColor,
               !name.isEmpty,
+              name.count <= maxCharacters,
               let category = selectedCategory else { return }
 
         do {
@@ -376,6 +436,9 @@ final class CreateTrackerViewController: UIViewController {
                 try trackerStore.update(tracker)
             } else {
                 try trackerStore.addTracker(tracker, to: category.title)
+            }
+            if isEditingMode {
+                editDelegate?.didUpdateTracker()
             }
             dismiss(animated: true)
         } catch {
@@ -455,8 +518,13 @@ extension CreateTrackerViewController: UITextFieldDelegate {
         return true
     }
 
-    func textFieldDidChangeSelection(_ textField: UITextField) {
-        updateCreateButtonState()
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        let currentText = textField.text ?? ""
+        guard let stringRange = Range(range, in: currentText) else { return false }
+        let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
+        let shouldShowError = updatedText.count > maxCharacters
+        updateConstraintsForErrorLabel(visible: shouldShowError, animated: true)
+        return true
     }
 }
 

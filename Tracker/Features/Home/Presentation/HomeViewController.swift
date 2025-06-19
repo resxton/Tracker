@@ -401,6 +401,7 @@ final class HomeViewController: UIViewController {
         })
         
         let editViewController = CreateTrackerViewController(type: .habit, trackerStore: trackerStore, trackerRecordStore: trackerRecordStore, editingTracker: tracker)
+        editViewController.editDelegate = self
         let navigationController = UINavigationController(rootViewController: editViewController)
         present(navigationController, animated: true)
     }
@@ -416,18 +417,28 @@ final class HomeViewController: UIViewController {
         YMMYandexMetrica.reportEvent(eventName, parameters: params, onFailure: { error in
             print("REPORT ERROR: \(error.localizedDescription)")
         })
-        
+
         let alert = UIAlertController(
-            title: NSLocalizedString("delete_tracker_title", comment: "Delete tracker alert title"),
+            title: nil,
             message: NSLocalizedString("delete_tracker_message", comment: "Delete tracker alert message"),
             preferredStyle: .actionSheet
         )
-        alert.addAction(UIAlertAction(title: NSLocalizedString("delete_action", comment: "Delete action"), style: .destructive) { [weak self] _ in
-            guard let self = self else { return }
-            do {
-                try self.trackerStore.delete(tracker)
-                self.collectionView.reloadData()
-                self.updateUI()
+        alert.addAction(
+            UIAlertAction(title: NSLocalizedString("delete_action", comment: "Delete action"), style: .destructive) { [weak self] _ in
+                guard let self = self else { return }
+                do {
+                    try self.trackerStore.delete(tracker)
+                    self.trackerDataProvider
+                        .updateFilter(
+                            schedule: nil,
+                            searchText: self.searchText,
+                            filter: self.selectedFilter,
+                            date: self.currentDate
+                        )
+                DispatchQueue.main.async {
+                    self.collectionView.reloadData()
+                    self.updateUI()
+                }
             } catch {
                 print("Ошибка при удалении трекера: \(error)")
             }
@@ -661,6 +672,13 @@ extension HomeViewController: FilterViewControllerDelegate {
     func didSelectFilter(_ filter: TrackerFilter) {
         selectedFilter = filter
         updateFilter()
+        updateUI()
+    }
+}
+
+extension HomeViewController: EditTrackerDelegate {
+    func didUpdateTracker() {
+        collectionView.reloadData()
         updateUI()
     }
 }

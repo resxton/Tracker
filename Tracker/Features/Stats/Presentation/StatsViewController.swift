@@ -85,7 +85,7 @@ class StatsViewController: UIViewController {
     
     private lazy var completedTrackersSubtitle: UILabel = {
         let label = UILabel()
-        label.text = "Завершенные трекеры"
+        label.text = "Трекеров завершено"
         label.textColor = .ypBlack
         label.font = .systemFont(ofSize: 12, weight: .medium)
         return label
@@ -151,19 +151,19 @@ class StatsViewController: UIViewController {
         stubView.addSubview(stubLabel)
         
         titleLabel.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(12)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(44)
             make.leading.trailing.equalTo(view.layoutMarginsGuide)
         }
         
         statsContainer.snp.makeConstraints { make in
-            make.centerX.equalToSuperview()
-            make.top.equalTo(titleLabel.snp.bottom).offset(20)
-            make.width.equalToSuperview().multipliedBy(0.9)
+            make.centerX.centerY.equalToSuperview()
+            make.top.equalTo(titleLabel.snp.bottom).offset(77)
+            make.leading.trailing.equalTo(view.layoutMarginsGuide)
         }
         
         stubView.snp.makeConstraints { make in
             make.center.equalToSuperview()
-            make.width.equalToSuperview().multipliedBy(0.9)
+            make.leading.trailing.equalTo(view.layoutMarginsGuide)
         }
         
         stubImageView.snp.makeConstraints { make in

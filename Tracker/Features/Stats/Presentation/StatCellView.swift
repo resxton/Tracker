@@ -45,9 +45,9 @@ final class StatCellView: UIView {
         
         gradientLayer.cornerRadius = 16
         
-        let leftColor = UIColor.colorSelection3.cgColor
+        let leftColor = UIColor.colorSelection1.cgColor
         let centerColor = UIColor.colorSelection9.cgColor
-        let rightColor = UIColor.colorSelection1.cgColor
+        let rightColor = UIColor.colorSelection3.cgColor
         
         gradientLayer.colors = [leftColor, centerColor, rightColor]
         gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)

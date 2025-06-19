@@ -23,5 +23,5 @@
 "edit_action" = "Редактировать";
 "delete_action" = "Удалить";
 "delete_tracker_title" = "Удалить привычку?";
-"delete_tracker_message" = "Вы уверены, что хотите удалить эту привычку?";
+"delete_tracker_message" = "Уверены что хотите удалить трекер?";
 "cancel_action" = "Отмена";
